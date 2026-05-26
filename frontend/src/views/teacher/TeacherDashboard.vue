@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen p-6">
+  <AppLayout>
     <div class="max-w-7xl mx-auto space-y-6">
       <header class="flex items-center justify-between">
         <div>
@@ -14,11 +14,12 @@
         <div class="panel p-5"><p class="text-sm text-slate-500">待处理提交</p><div class="text-3xl font-bold mt-2 text-red-600">{{ dashboard.pendingReviews }}</div></div>
       </section>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive } from 'vue'
+import AppLayout from '../../components/AppLayout.vue'
 import http from '../../api/http'
 
 const dashboard = reactive({

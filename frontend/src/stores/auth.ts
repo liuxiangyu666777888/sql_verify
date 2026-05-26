@@ -14,6 +14,14 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('token', this.token)
       localStorage.setItem('role', this.user?.role || '')
     },
+    async fetchMe() {
+      if (!this.token) {
+        return
+      }
+      const { data } = await http.get('/auth/me')
+      this.user = data.data
+      localStorage.setItem('role', this.user?.role || '')
+    },
     logout() {
       this.token = ''
       this.user = null

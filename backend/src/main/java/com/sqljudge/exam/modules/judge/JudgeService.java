@@ -5,22 +5,54 @@ import com.sqljudge.exam.modules.question.QuestionMapper;
 import com.sqljudge.exam.modules.question.QuestionRecord;
 import com.sqljudge.exam.modules.question.TestCaseRecord;
 import com.sqljudge.exam.modules.question.TestCaseMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Select;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class JudgeService {
     private final QuestionMapper questionMapper;
     private final TestCaseMapper testCaseMapper;
+    private final ObjectMapper objectMapper;
 
-    public JudgeService(QuestionMapper questionMapper, TestCaseMapper testCaseMapper) {
+    @Value("${app.judge.host}")
+    private String host;
+
+    @Value("${app.judge.port}")
+    private int port;
+
+    @Value("${app.judge.username}")
+    private String username;
+
+    @Value("${app.judge.password}")
+    private String password;
+
+    @Value("${app.judge.timeout-seconds}")
+    private int timeoutSeconds;
+
+    public JudgeService(QuestionMapper questionMapper, TestCaseMapper testCaseMapper, ObjectMapper objectMapper) {
         this.questionMapper = questionMapper;
         this.testCaseMapper = testCaseMapper;
+        this.objectMapper = objectMapper;
     }
 
     public JudgeResult run(JudgeRequest request) {
@@ -29,11 +61,182 @@ public class JudgeService {
         if (question == null) {
             throw BusinessException.notFound("题目不存在");
         }
-        TestCaseRecord testCase = testCaseMapper.firstVisibleByQuestionId(request.getQuestionId());
-        if (testCase == null) {
+        List<TestCaseRecord> testCases = testCaseMapper.listVisibleByQuestionId(request.getQuestionId());
+        if (testCases.isEmpty()) {
             return new JudgeResult("ERROR", 0, 0, "没有可执行测试用例", null, Collections.emptyList());
         }
-        return new JudgeResult("AC", 100, 1, null, Collections.singletonMap("columns", Collections.emptyList()), Collections.emptyList());
+        String schema = "judge_" + request.getQuestionId() + "_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        List<Map<String, Object>> details = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        int passed = 0;
+        String status = "AC";
+        String errorMessage = null;
+        Map<String, Object> preview = null;
+        try {
+            for (TestCaseRecord testCase : testCases) {
+                JudgeCaseResult caseResult = executeCase(schema, testCase, request.getSqlCode());
+                if (preview == null) {
+                    preview = caseResult.preview;
+                }
+                Map<String, Object> detail = new HashMap<>();
+                detail.put("caseId", testCase.getCaseId());
+                detail.put("passed", caseResult.passed);
+                detail.put("message", caseResult.message);
+                details.add(detail);
+                if (caseResult.passed) {
+                    passed++;
+                } else if ("WA".equals(caseResult.status)) {
+                    status = "WA";
+                } else {
+                    status = caseResult.status;
+                    errorMessage = caseResult.message;
+                    break;
+                }
+            }
+        } finally {
+            dropSchema(schema);
+        }
+        double score = Math.round((passed * 10000.0 / testCases.size())) / 100.0;
+        if (passed == testCases.size()) {
+            status = "AC";
+        }
+        return new JudgeResult(status, score, (int) (System.currentTimeMillis() - start), errorMessage, preview, details);
+    }
+
+    private JudgeCaseResult executeCase(String schema, TestCaseRecord testCase, String studentSql) {
+        String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        String schemaUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        try (Connection admin = DriverManager.getConnection(adminUrl, username, password)) {
+            try (java.sql.Statement stmt = admin.createStatement()) {
+                stmt.execute("CREATE DATABASE IF NOT EXISTS " + schema);
+            }
+            try (Connection conn = DriverManager.getConnection(schemaUrl, username, password)) {
+                try (java.sql.Statement init = conn.createStatement()) {
+                    init.execute(testCase.getInputSql());
+                }
+                try (java.sql.Statement run = conn.createStatement()) {
+                    run.setQueryTimeout(timeoutSeconds);
+                    try (ResultSet rs = run.executeQuery(studentSql)) {
+                        Map<String, Object> actual = readResult(rs);
+                        Map<String, Object> expected = readJson(testCase.getExpectedOutput());
+                        boolean passed = compare(actual, expected);
+                        return new JudgeCaseResult(passed ? "AC" : "WA", passed, passed ? "通过" : "结果不匹配", actual);
+                    }
+                }
+            }
+        } catch (java.sql.SQLTimeoutException ex) {
+            return new JudgeCaseResult("TLE", false, "执行超时", null);
+        } catch (Exception ex) {
+            String msg = ex.getMessage() == null ? "执行失败" : ex.getMessage();
+            return new JudgeCaseResult("ERROR", false, msg, null);
+        }
+    }
+
+    private void dropSchema(String schema) {
+        String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        try (Connection admin = DriverManager.getConnection(adminUrl, username, password);
+             java.sql.Statement stmt = admin.createStatement()) {
+            stmt.execute("DROP DATABASE IF EXISTS " + schema);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private Map<String, Object> readResult(ResultSet rs) throws Exception {
+        ResultSetMetaData meta = rs.getMetaData();
+        List<String> columns = new ArrayList<>();
+        for (int i = 1; i <= meta.getColumnCount(); i++) {
+            columns.add(meta.getColumnLabel(i));
+        }
+        List<List<Object>> rows = new ArrayList<>();
+        while (rs.next()) {
+            List<Object> row = new ArrayList<>();
+            for (int i = 1; i <= meta.getColumnCount(); i++) {
+                Object value = rs.getObject(i);
+                if (value instanceof BigDecimal) {
+                    BigDecimal bd = ((BigDecimal) value).stripTrailingZeros();
+                    value = bd.scale() <= 0 ? bd.longValue() : bd.doubleValue();
+                }
+                row.add(value);
+            }
+            rows.add(row);
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("columns", columns);
+        result.put("rows", rows);
+        return result;
+    }
+
+    private Map<String, Object> readJson(String json) throws Exception {
+        JsonNode node = objectMapper.readTree(json);
+        Map<String, Object> result = new HashMap<>();
+        result.put("columns", objectMapper.convertValue(node.get("columns"), List.class));
+        result.put("rows", objectMapper.convertValue(node.get("rows"), List.class));
+        result.put("orderSensitive", node.has("orderSensitive") && node.get("orderSensitive").asBoolean());
+        return result;
+    }
+
+    private boolean compare(Map<String, Object> actual, Map<String, Object> expected) throws Exception {
+        List<?> actualColumns = (List<?>) actual.get("columns");
+        List<?> expectedColumns = (List<?>) expected.get("columns");
+        if (!actualColumns.equals(expectedColumns)) {
+            return false;
+        }
+        List<List<Object>> actualRows = (List<List<Object>>) actual.get("rows");
+        List<List<Object>> expectedRows = (List<List<Object>>) expected.get("rows");
+        boolean orderSensitive = Boolean.TRUE.equals(expected.get("orderSensitive"));
+        if (!orderSensitive) {
+            Comparator<List<Object>> comparator = Comparator.comparing(this::rowKey);
+            actualRows = new ArrayList<>(actualRows);
+            expectedRows = new ArrayList<>(expectedRows);
+            actualRows.sort(comparator);
+            expectedRows.sort(comparator);
+        }
+        if (actualRows.size() != expectedRows.size()) {
+            return false;
+        }
+        for (int i = 0; i < actualRows.size(); i++) {
+            if (!normalizeRow(actualRows.get(i)).equals(normalizeRow(expectedRows.get(i)))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String rowKey(List<Object> row) {
+        return normalizeRow(row).toString();
+    }
+
+    private List<Object> normalizeRow(List<Object> row) {
+        List<Object> normalized = new ArrayList<>();
+        for (Object item : row) {
+            if (item == null) {
+                normalized.add(null);
+            } else if (item instanceof Number) {
+                double v = ((Number) item).doubleValue();
+                if (Math.floor(v) == v) {
+                    normalized.add((long) v);
+                } else {
+                    normalized.add(v);
+                }
+            } else {
+                normalized.add(String.valueOf(item));
+            }
+        }
+        return normalized;
+    }
+
+    private static class JudgeCaseResult {
+        private final String status;
+        private final boolean passed;
+        private final String message;
+        private final Map<String, Object> preview;
+
+        private JudgeCaseResult(String status, boolean passed, String message, Map<String, Object> preview) {
+            this.status = status;
+            this.passed = passed;
+            this.message = message;
+            this.preview = preview;
+        }
     }
 
     private void validateSql(String sql) {

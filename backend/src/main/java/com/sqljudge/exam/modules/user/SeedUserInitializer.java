@@ -22,7 +22,11 @@ public class SeedUserInitializer implements CommandLineRunner {
     }
 
     private void ensure(String username, String realName, String email, String role) {
-        if (userMapper.findByUsername(username) != null) {
+        UserRecord existing = userMapper.findByUsername(username);
+        if (existing != null) {
+            if (!passwordEncoder.matches("password", existing.getPasswordHash())) {
+                userMapper.updatePasswordHash(username, passwordEncoder.encode("password"));
+            }
             return;
         }
         UserRecord record = new UserRecord();

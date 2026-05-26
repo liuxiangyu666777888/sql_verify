@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface UserMapper {
@@ -15,4 +16,7 @@ public interface UserMapper {
 
     @Insert("insert into users(username, password_hash, real_name, email, role, status) values(#{username}, #{passwordHash}, #{realName}, #{email}, #{role}, 'ACTIVE')")
     void insert(UserRecord record);
+
+    @Update("update users set password_hash = #{passwordHash}, status = 'ACTIVE' where username = #{username}")
+    void updatePasswordHash(@Param("username") String username, @Param("passwordHash") String passwordHash);
 }

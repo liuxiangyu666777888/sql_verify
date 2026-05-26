@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen p-6">
+  <AppLayout>
     <div class="max-w-7xl mx-auto space-y-6">
       <header class="flex items-center justify-between">
         <div>
@@ -31,22 +31,23 @@
             <p class="font-medium">{{ dashboard.upcomingExams[0]?.examName || '暂无考试' }}</p>
             <p class="text-sm text-slate-500">{{ dashboard.upcomingExams[0]?.startTime || '' }} - {{ dashboard.upcomingExams[0]?.endTime || '' }}</p>
           </div>
-          <button class="btn-primary rounded-lg px-4 py-2">进入考试</button>
+          <button class="btn-primary rounded-lg px-4 py-2 disabled:opacity-40" :disabled="!dashboard.upcomingExams[0]" @click="$router.push(`/student/exams/${dashboard.upcomingExams[0]?.examId}/take`)">进入考试</button>
         </div>
       </section>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive } from 'vue'
+import AppLayout from '../../components/AppLayout.vue'
 import http from '../../api/http'
 
 const dashboard = reactive({
   solvedCount: 0,
   accuracyRate: 0,
   streakDays: 0,
-  upcomingExams: [] as Array<{ examName: string; startTime: string; endTime: string }>,
+  upcomingExams: [] as Array<{ examId: number; examName: string; startTime: string; endTime: string }>,
 })
 
 onMounted(async () => {

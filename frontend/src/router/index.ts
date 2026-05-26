@@ -5,13 +5,29 @@ import StudentDashboard from '../views/student/StudentDashboard.vue'
 import QuestionViewer from '../views/QuestionViewer.vue'
 import ExamWizard from '../views/teacher/ExamWizard.vue'
 import TeacherDashboard from '../views/teacher/TeacherDashboard.vue'
+import QuestionList from '../views/QuestionList.vue'
+import StudentSubmissions from '../views/student/StudentSubmissions.vue'
+import StudentClasses from '../views/student/StudentClasses.vue'
+import StudentExams from '../views/student/StudentExams.vue'
+import ExamTake from '../views/student/ExamTake.vue'
+import TeacherQuestions from '../views/teacher/TeacherQuestions.vue'
+import TeacherClasses from '../views/teacher/TeacherClasses.vue'
+import TeacherScores from '../views/teacher/TeacherScores.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
   { path: '/login', component: LoginView },
   { path: '/student/dashboard', component: StudentDashboard },
+  { path: '/student/submissions', component: StudentSubmissions },
+  { path: '/student/classes', component: StudentClasses },
+  { path: '/student/exams', component: StudentExams },
+  { path: '/student/exams/:id/take', component: ExamTake },
+  { path: '/problems', component: QuestionList },
   { path: '/problems/:id', component: QuestionViewer },
   { path: '/teacher/dashboard', component: TeacherDashboard },
+  { path: '/teacher/questions', component: TeacherQuestions },
+  { path: '/teacher/classes', component: TeacherClasses },
+  { path: '/teacher/scores', component: TeacherScores },
   { path: '/teacher/exams/new', component: ExamWizard },
 ]
 

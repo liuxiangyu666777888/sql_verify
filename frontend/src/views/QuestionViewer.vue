@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen p-6">
+  <AppLayout>
     <div class="grid lg:grid-cols-[1.15fr_1fr] gap-6 max-w-7xl mx-auto">
       <section class="panel p-6 space-y-4">
         <div>
@@ -25,18 +25,31 @@
           <div class="font-medium mb-2">{{ result.status }}</div>
           <div>Score: {{ result.score }}</div>
           <div v-if="result.errorMessage" class="text-red-600 mt-2">{{ result.errorMessage }}</div>
+          <div v-if="result.resultPreview?.columns?.length" class="mt-4 overflow-auto">
+            <table class="table w-full bg-white">
+              <thead><tr><th v-for="col in result.resultPreview.columns" :key="col">{{ col }}</th></tr></thead>
+              <tbody>
+                <tr v-for="(row, idx) in result.resultPreview.rows" :key="idx">
+                  <td v-for="(cell, cidx) in row" :key="cidx">{{ cell }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
+import AppLayout from '../components/AppLayout.vue'
 import http from '../api/http'
 
+const route = useRoute()
 const sql = ref('SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary FROM Employee e JOIN Department d ON e.departmentId = d.id WHERE (e.departmentId, e.salary) IN (SELECT departmentId, MAX(salary) FROM Employee GROUP BY departmentId);')
-const result = ref<{ status: string; score: number; errorMessage?: string }>({ status: '待执行', score: 0 })
+const result = ref<{ status: string; score: number; errorMessage?: string; resultPreview?: any }>({ status: '待执行', score: 0 })
 const question = ref<{ title: string; description: string; sourceSchemaSql: string }>({
   title: '',
   description: '',
@@ -44,19 +57,18 @@ const question = ref<{ title: string; description: string; sourceSchemaSql: stri
 })
 
 async function load() {
-  const { data } = await http.get(`/questions/${(window.location.pathname.split('/').pop())}`)
+  const { data } = await http.get(`/questions/${route.params.id}`)
   question.value = data.data
 }
-
 load()
 
 async function run() {
-  const { data } = await http.post('/judge/run', { questionId: 1, sqlCode: sql.value })
+  const { data } = await http.post('/judge/run', { questionId: Number(route.params.id), sqlCode: sql.value })
   result.value = data.data
 }
 
 async function submit() {
-  const { data } = await http.post('/judge/run', { questionId: 1, sqlCode: sql.value })
+  const { data } = await http.post('/submissions', { questionId: Number(route.params.id), sqlCode: sql.value })
   result.value = data.data
 }
 </script>

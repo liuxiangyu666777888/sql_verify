@@ -6,11 +6,11 @@
         <h1 class="text-3xl font-bold mt-2">数据库课程实验系统</h1>
       </div>
       <form class="space-y-4" @submit.prevent="submit">
-        <input v-model="username" class="w-full border rounded-lg px-4 py-3" placeholder="用户名" />
-        <input v-model="password" type="password" class="w-full border rounded-lg px-4 py-3" placeholder="密码" />
+        <input v-model="username" class="input" placeholder="用户名" />
+        <input v-model="password" type="password" class="input" placeholder="密码" />
         <button class="btn-primary w-full rounded-lg px-4 py-3 font-medium">登录</button>
       </form>
-      <p class="text-sm text-slate-500">教师/学生种子账号密码均为 password</p>
+      <p class="text-sm text-slate-500">默认账号密码均为 password</p>
     </div>
   </div>
 </template>

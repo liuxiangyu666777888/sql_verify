@@ -24,4 +24,16 @@ public class QuestionService {
         }
         return record;
     }
+
+    public QuestionDetailResponse detailResponse(Long id) {
+        QuestionRecord record = detail(id);
+        QuestionDetailResponse response = new QuestionDetailResponse();
+        response.setQuestionId(record.getQuestionId());
+        response.setTitle(record.getTitle());
+        response.setDescription(record.getDescription());
+        response.setDifficulty(record.getDifficulty());
+        response.setSourceSchemaSql(record.getSourceSchemaSql());
+        response.setTags(record.getTags());
+        return response;
+    }
 }
