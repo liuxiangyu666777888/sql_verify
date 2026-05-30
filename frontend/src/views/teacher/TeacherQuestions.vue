@@ -1,11 +1,9 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
-      <header class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-500">Question Management</p>
-          <h1 class="text-3xl font-bold">题库管理</h1>
-        </div>
+    <div class="page-inner space-y-6">
+      <header>
+        <div class="label">Question Management</div>
+        <h1 class="headline-lg">题库管理</h1>
       </header>
       <section class="panel overflow-hidden">
         <table class="table w-full">
@@ -15,7 +13,7 @@
               <td>{{ item.questionId }}</td>
               <td>{{ item.title }}</td>
               <td>{{ item.difficulty }}</td>
-              <td><button class="btn-secondary rounded-lg px-3 py-1.5" @click="go(item.questionId)">查看</button></td>
+              <td><button class="btn-secondary" @click="go(item.questionId)">查看</button></td>
             </tr>
           </tbody>
         </table>

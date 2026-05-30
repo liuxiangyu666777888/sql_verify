@@ -1,16 +1,21 @@
 <template>
-  <div class="app-shell min-h-screen flex items-center justify-center p-6">
-    <div class="panel w-full max-w-md p-8 space-y-6">
-      <div>
-        <p class="text-sm text-slate-500">SQL Judge Exam</p>
-        <h1 class="text-3xl font-bold mt-2">数据库课程实验系统</h1>
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="login-mark">
+          <span class="material-symbols-outlined fill-icon">database</span>
+        </div>
+        <div>
+          <div class="login-kicker">SQL Master</div>
+          <h1>数据库课程实验系统</h1>
+        </div>
       </div>
-      <form class="space-y-4" @submit.prevent="submit">
-        <input v-model="username" class="input" placeholder="用户名" />
-        <input v-model="password" type="password" class="input" placeholder="密码" />
-        <button class="btn-primary w-full rounded-lg px-4 py-3 font-medium">登录</button>
+      <form class="login-form" @submit.prevent="submit">
+        <input v-model="username" class="login-input" placeholder="用户名" />
+        <input v-model="password" type="password" class="login-input" placeholder="密码" />
+        <button class="login-button">登录</button>
       </form>
-      <p class="text-sm text-slate-500">默认账号密码均为 password</p>
+      <div class="login-note">默认账号：student1 / password，teacher1 / password</div>
     </div>
   </div>
 </template>

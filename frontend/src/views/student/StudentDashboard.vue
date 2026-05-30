@@ -1,37 +1,54 @@
 <template>
   <AppLayout>
-    <div class="max-w-7xl mx-auto space-y-6">
-      <header class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-slate-500">Student Dashboard</p>
-          <h1 class="text-3xl font-bold">学习工作台</h1>
-        </div>
-        <button class="btn-secondary rounded-lg px-4 py-2" @click="$router.push('/problems/1')">进入示例题</button>
-      </header>
-
-      <section class="grid md:grid-cols-3 gap-4">
-        <div class="panel p-5">
-          <p class="text-sm text-slate-500">已解决题数</p>
-          <div class="text-3xl font-bold mt-2">{{ dashboard.solvedCount }}</div>
-        </div>
-        <div class="panel p-5">
-          <p class="text-sm text-slate-500">正确率</p>
-          <div class="text-3xl font-bold mt-2">{{ dashboard.accuracyRate }}%</div>
-        </div>
-        <div class="panel p-5">
-          <p class="text-sm text-slate-500">连续练习</p>
-          <div class="text-3xl font-bold mt-2">{{ dashboard.streakDays }} 天</div>
+    <div class="page-inner space-y-6">
+      <section class="hero-band hero-band-strong">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div class="label">Dashboard</div>
+            <h1 class="headline-lg">学习工作台</h1>
+            <p class="muted mt-2">浏览题库、练习 SQL、查看即将考试。</p>
+          </div>
+          <button class="btn-primary" @click="$router.push('/problems/1')">
+            <span class="material-symbols-outlined">arrow_forward</span>
+            进入示例题
+          </button>
         </div>
       </section>
 
-      <section class="panel p-6">
-        <h2 class="text-xl font-semibold mb-4">即将考试</h2>
-        <div class="border rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p class="font-medium">{{ dashboard.upcomingExams[0]?.examName || '暂无考试' }}</p>
-            <p class="text-sm text-slate-500">{{ dashboard.upcomingExams[0]?.startTime || '' }} - {{ dashboard.upcomingExams[0]?.endTime || '' }}</p>
+      <section class="metric-row">
+        <div class="stat-card">
+          <span class="material-symbols-outlined stat-icon">task_alt</span>
+          <div class="label">已解决题数</div>
+          <div class="headline-lg mt-2">{{ dashboard.solvedCount }}</div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-outlined stat-icon">target</span>
+          <div class="label">正确率</div>
+          <div class="headline-lg mt-2">{{ dashboard.accuracyRate }}%</div>
+        </div>
+        <div class="stat-card">
+          <span class="material-symbols-outlined stat-icon">local_fire_department</span>
+          <div class="label">连续练习</div>
+          <div class="headline-lg mt-2">{{ dashboard.streakDays }} 天</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="headline-md">即将考试</h2>
+        </div>
+        <div class="p-5 space-y-4">
+          <div v-if="dashboard.upcomingExams[0]" class="flex items-center justify-between gap-4">
+            <div>
+              <div class="font-semibold">{{ dashboard.upcomingExams[0].examName }}</div>
+              <div class="muted text-sm mt-1">{{ dashboard.upcomingExams[0].startTime }} - {{ dashboard.upcomingExams[0].endTime }}</div>
+            </div>
+            <button class="btn-primary" @click="$router.push(`/student/exams/${dashboard.upcomingExams[0].examId}/take`)">
+              <span class="material-symbols-outlined">school</span>
+              进入考试
+            </button>
           </div>
-          <button class="btn-primary rounded-lg px-4 py-2 disabled:opacity-40" :disabled="!dashboard.upcomingExams[0]" @click="$router.push(`/student/exams/${dashboard.upcomingExams[0]?.examId}/take`)">进入考试</button>
+          <div v-else class="muted text-sm">暂无考试安排</div>
         </div>
       </section>
     </div>

@@ -1,15 +1,15 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="page-inner space-y-6">
       <header>
-        <p class="text-sm text-slate-500">My Classes</p>
-        <h1 class="text-3xl font-bold">我的班级</h1>
+        <div class="label">My Classes</div>
+        <h1 class="headline-lg">我的班级</h1>
       </header>
-      <section class="grid md:grid-cols-2 gap-4">
+      <section class="grid gap-4 md:grid-cols-2">
         <div v-for="item in list" :key="item.classId" class="panel p-5">
           <div class="font-semibold">{{ item.className }}</div>
-          <div class="text-sm text-slate-500 mt-1">{{ item.semester }}</div>
-          <div class="text-sm text-slate-500 mt-1">邀请码：{{ item.inviteCode }}</div>
+          <div class="muted mt-1 text-sm">{{ item.semester }}</div>
+          <div class="muted mt-1 text-sm">邀请码：{{ item.inviteCode }}</div>
         </div>
       </section>
     </div>

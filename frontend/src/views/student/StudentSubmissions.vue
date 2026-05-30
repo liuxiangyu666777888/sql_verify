@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="page-inner space-y-6">
       <header>
-        <p class="text-sm text-slate-500">My Submissions</p>
-        <h1 class="text-3xl font-bold">提交记录</h1>
+        <div class="label">My Submissions</div>
+        <h1 class="headline-lg">提交记录</h1>
       </header>
       <section class="panel overflow-hidden">
         <table class="table w-full">

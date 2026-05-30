@@ -1,59 +1,128 @@
 <template>
   <AppLayout>
-    <div class="grid lg:grid-cols-[1.15fr_1fr] gap-6 max-w-7xl mx-auto">
-      <section class="panel p-6 space-y-4">
-        <div>
-          <p class="text-sm text-slate-500">Problem #{{ $route.params.id }}</p>
-          <h1 class="text-3xl font-bold mt-1">{{ question.title }}</h1>
-        </div>
-        <p class="leading-7 text-slate-700">{{ question.description }}</p>
-        <div class="border rounded-xl p-4 bg-slate-50 text-sm font-mono overflow-auto">
-          {{ question.sourceSchemaSql }}
-        </div>
-      </section>
-      <section class="panel p-6 space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">SQL 编辑器</h2>
-          <span class="text-sm text-slate-500">MySQL</span>
-        </div>
-        <textarea v-model="sql" class="w-full min-h-[280px] border rounded-xl p-4 font-mono text-sm" />
-        <div class="flex gap-3">
-          <button class="btn-secondary rounded-lg px-4 py-2" @click="run">运行自测</button>
-          <button class="btn-primary rounded-lg px-4 py-2" @click="submit">提交代码</button>
-        </div>
-        <div class="border rounded-xl p-4 bg-slate-50 text-sm">
-          <div class="font-medium mb-2">{{ result.status }}</div>
-          <div>Score: {{ result.score }}</div>
-          <div v-if="result.errorMessage" class="text-red-600 mt-2">{{ result.errorMessage }}</div>
-          <div v-if="result.resultPreview?.columns?.length" class="mt-4 overflow-auto">
-            <table class="table w-full bg-white">
-              <thead><tr><th v-for="col in result.resultPreview.columns" :key="col">{{ col }}</th></tr></thead>
-              <tbody>
-                <tr v-for="(row, idx) in result.resultPreview.rows" :key="idx">
-                  <td v-for="(cell, cidx) in row" :key="cidx">{{ cell }}</td>
-                </tr>
-              </tbody>
-            </table>
+    <div class="page-inner">
+      <div class="split-editor">
+        <section class="panel overflow-hidden">
+          <div class="panel-header">
+            <div class="flex items-center gap-3">
+              <h1 class="headline-md">{{ question.title || '题目详情' }}</h1>
+              <span class="rounded border border-outline-variant bg-surface-low px-2 py-1 text-xs font-bold">
+                {{ question.difficulty || 'MEDIUM' }}
+              </span>
+            </div>
           </div>
+          <div class="p-6 space-y-5">
+            <p class="leading-7 text-[15px] text-on-surface-variant">{{ question.description }}</p>
+            <div class="code-box">{{ question.sourceSchemaSql }}</div>
+            <div class="rounded-lg border border-dashed border-outline-variant bg-surface-lowest p-4">
+              <div class="label mb-2">示例输出</div>
+              <div class="text-sm text-on-surface-variant">以标准 MySQL 查询结果为准，提交后按测试用例自动判分。</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="split-divider">
+          <div class="h-8 w-0.5 rounded-full bg-outline-variant"></div>
         </div>
-      </section>
+
+        <section class="panel overflow-hidden">
+          <div class="editor-shell">
+            <div class="editor-toolbar">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-on-surface-variant">code_blocks</span>
+                <span class="label normal-case tracking-normal">MySQL</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="icon-btn"><span class="material-symbols-outlined">format_align_left</span></button>
+                <button class="icon-btn"><span class="material-symbols-outlined">settings</span></button>
+                <button class="icon-btn"><span class="material-symbols-outlined">fullscreen</span></button>
+              </div>
+            </div>
+
+            <div class="editor-body">
+              <div class="line-gutter">
+                <div v-for="line in 18" :key="line">{{ line }}</div>
+              </div>
+              <textarea v-model="sql" class="editor-area"></textarea>
+            </div>
+
+            <div class="result-strip">
+              <div class="flex gap-6">
+                <button class="h-11 border-b-2 border-transparent text-sm text-on-surface-variant">测试用例</button>
+                <button class="h-11 border-b-2 border-primary text-sm font-bold text-primary">执行结果</button>
+              </div>
+              <div class="flex gap-2">
+                <button class="btn-secondary" @click="run">
+                  <span class="material-symbols-outlined">play_arrow</span>
+                  运行自测
+                </button>
+                <button class="btn-primary" @click="submit">
+                  <span class="material-symbols-outlined">cloud_upload</span>
+                  提交代码
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-4 bg-surface-lowest p-4">
+              <div class="status-pill" :class="statusClass">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                {{ statusText }}
+              </div>
+              <div class="result-meta">
+                <span>执行用时: <strong>{{ result.runtimeMs || 0 }} ms</strong></span>
+                <span>得分: <strong>{{ result.score }}</strong></span>
+              </div>
+              <div v-if="result.resultPreview?.columns?.length" class="panel overflow-hidden">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th v-for="col in result.resultPreview.columns" :key="col">{{ col }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in result.resultPreview.rows" :key="idx">
+                      <td v-for="(cell, cidx) in row" :key="cidx">{{ cell }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-if="result.errorMessage" class="text-sm text-red-600">{{ result.errorMessage }}</div>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import http from '../api/http'
 
 const route = useRoute()
 const sql = ref('SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary FROM Employee e JOIN Department d ON e.departmentId = d.id WHERE (e.departmentId, e.salary) IN (SELECT departmentId, MAX(salary) FROM Employee GROUP BY departmentId);')
-const result = ref<{ status: string; score: number; errorMessage?: string; resultPreview?: any }>({ status: '待执行', score: 0 })
-const question = ref<{ title: string; description: string; sourceSchemaSql: string }>({
+const result = ref<{ status: string; score: number; runtimeMs?: number; errorMessage?: string; resultPreview?: any }>({ status: '待执行', score: 0 })
+const question = ref<{ title: string; description: string; difficulty?: string; sourceSchemaSql: string }>({
   title: '',
   description: '',
+  difficulty: '',
   sourceSchemaSql: '',
+})
+
+const statusText = computed(() => {
+  if (result.value.status === 'AC') return 'Accepted'
+  if (result.value.status === 'WA') return 'Wrong Answer'
+  if (result.value.status === 'FORBIDDEN') return 'Forbidden'
+  if (result.value.status === 'TLE') return 'Time Limit Exceeded'
+  return result.value.status || 'Pending'
+})
+
+const statusClass = computed(() => {
+  if (result.value.status === 'AC') return 'bg-green-700'
+  if (result.value.status === 'WA' || result.value.status === 'ERROR') return 'bg-red-600'
+  return 'bg-slate-600'
 })
 
 async function load() {

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Configure Exam - Academic SQL</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#341100",
+                        "error": "#ba1a1a",
+                        "outline": "#727785",
+                        "secondary-fixed": "#dde3eb",
+                        "surface-container-highest": "#e0e2ec",
+                        "surface-tint": "#005bc0",
+                        "on-background": "#191c23",
+                        "primary-container": "#1a73e8",
+                        "surface-bright": "#f9f9ff",
+                        "surface-container": "#ecedf7",
+                        "on-surface": "#191c23",
+                        "on-tertiary-fixed-variant": "#783100",
+                        "background": "#f9f9ff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-tertiary-container": "#0e0200",
+                        "on-surface-variant": "#414754",
+                        "outline-variant": "#c1c6d6",
+                        "surface-container-low": "#f2f3fd",
+                        "tertiary": "#9e4300",
+                        "inverse-on-surface": "#eff0fa",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#d8d9e3",
+                        "inverse-primary": "#adc7ff",
+                        "on-secondary-fixed": "#161c22",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e0e2ec",
+                        "surface-container-high": "#e6e8f2",
+                        "secondary": "#595f65",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#dde3eb",
+                        "on-secondary-fixed-variant": "#41474e",
+                        "tertiary-container": "#c55500",
+                        "on-secondary-container": "#5f656c",
+                        "secondary-fixed-dim": "#c1c7ce",
+                        "primary": "#005bbf",
+                        "tertiary-fixed": "#ffdbcb",
+                        "surface": "#f9f9ff",
+                        "inverse-surface": "#2d3038",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "on-primary-container": "#ffffff",
+                        "primary-fixed-dim": "#adc7ff",
+                        "on-primary-fixed": "#001a41",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "container-max-width": "1280px",
+                        "unit": "8px",
+                        "gutter": "24px",
+                        "sidebar-width": "320px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "code-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Hide scrollbar for cleaner look in preview panel but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md h-screen flex flex-col overflow-hidden selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Global Nav is suppressed due to Task-Focused intent. Using a dedicated Wizard Header instead. -->
+<header class="bg-surface-container-lowest border-b border-outline-variant h-16 flex items-center justify-between px-gutter shrink-0 z-50">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[20px] group-hover:-translate-x-1 transition-transform" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-sm text-label-sm">Exit Configuration</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<div class="font-headline-md text-headline-md font-bold text-on-surface">New Midterm Assessment</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="cloud_done">cloud_done</span>
+                Draft auto-saved at 10:42 AM
+            </span>
+</div>
+</header>
+<!-- Main Workspace: Split View -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Left Canvas: Guided Form -->
+<section class="flex-1 overflow-y-auto bg-background p-gutter flex justify-center">
+<div class="w-full max-w-3xl pb-32">
+<!-- Stepper Progress Tracker -->
+<div class="flex items-center justify-between mb-12 relative px-4">
+<!-- Progress Line Background -->
+<div class="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-[2px] bg-surface-container-highest -z-10"></div>
+<!-- Active Progress Line -->
+<div class="absolute left-8 right-1/2 top-1/2 -translate-y-1/2 h-[2px] bg-primary -z-10 w-0 transition-all duration-500" id="progress-line"></div>
+<!-- Step 1: Active -->
+<div class="flex flex-col items-center gap-2 bg-background">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm border-4 border-background ring-2 ring-primary">
+                            1
+                        </div>
+<span class="font-label-sm text-label-sm text-primary">Configuration</span>
+</div>
+<!-- Step 2: Inactive -->
+<div class="flex flex-col items-center gap-2 bg-background">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm border-4 border-background">
+                            2
+                        </div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Select Problems</span>
+</div>
+<!-- Step 3: Inactive -->
+<div class="flex flex-col items-center gap-2 bg-background">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-sm text-label-sm border-4 border-background">
+                            3
+                        </div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Assign Points</span>
+</div>
+</div>
+<!-- Form Container (Step 1) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-6 border-b border-outline-variant bg-surface-bright">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="settings">settings</span>
+                            Exam Parameters
+                        </h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Define the fundamental settings and timing for this assessment.</p>
+</div>
+<div class="p-6 space-y-8">
+<!-- Input Group: Name -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2" for="examName">Exam Title <span class="text-error">*</span></label>
+<input class="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline" id="examName" placeholder="Enter an official title..." type="text" value="CS304 Database Systems - Midterm"/>
+</div>
+<!-- Grid: Timing -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2" for="startTime">Start Window <span class="text-error">*</span></label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="calendar_today">calendar_today</span>
+<input class="w-full bg-surface-bright border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="startTime" type="datetime-local" value="2023-11-15T09:00"/>
+</div>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2" for="endTime">End Window <span class="text-error">*</span></label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="event_busy">event_busy</span>
+<input class="w-full bg-surface-bright border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="endTime" type="datetime-local" value="2023-11-15T11:00"/>
+</div>
+</div>
+</div>
+<div class="h-px bg-outline-variant w-full"></div>
+<!-- Grid: Rules -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2" for="duration">Duration Limit (Minutes)</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="timer">timer</span>
+<input class="w-full bg-surface-bright border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="duration" type="number" value="120"/>
+</div>
+<p class="text-[12px] text-on-surface-variant mt-1">Leave blank to use the full window.</p>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2">Environment Strictness</label>
+<div class="flex items-center justify-between bg-surface-bright border border-outline-variant rounded-lg px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="lock">lock</span>
+<span class="font-body-md text-body-md text-on-surface">Lockdown Browser</span>
+</div>
+<!-- Toggle Switch -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-fixed rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Instructions text area -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface mb-2" for="instructions">Candidate Instructions</label>
+<textarea class="w-full bg-surface-bright border border-outline-variant rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline resize-none" id="instructions" rows="4">Please read each prompt carefully. Ensure your queries utilize standard ANSI SQL. Submissions will be evaluated on both correctness and execution efficiency.</textarea>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Canvas: Live Preview Outline -->
+<aside class="w-sidebar-width bg-surface-container-low border-l border-outline-variant flex flex-col z-10 shadow-[-4px_0_12px_rgba(0,0,0,0.02)]">
+<div class="p-6 border-b border-outline-variant bg-surface-container-lowest shrink-0">
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="view_list">view_list</span>
+                    Exam Outline
+                </h3>
+<div class="flex justify-between items-center mt-4 p-3 bg-primary-fixed rounded-lg border border-primary-fixed-dim">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-primary-fixed">Total Points</span>
+<span class="font-headline-lg text-headline-lg text-primary">0</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-primary-fixed">Problems</span>
+<span class="font-headline-lg text-headline-lg text-primary">0</span>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 no-scrollbar">
+<!-- Empty State for Step 1 -->
+<div class="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-lowest">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-outline text-[32px]" data-icon="post_add">post_add</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface">No Problems Selected</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 text-sm">Proceed to the next step to select SQL challenges from the problem bank.</p>
+</div>
+<!-- Example of populated state (hidden visually, but structured for demonstration of "real-time generation") -->
+<div class="hidden space-y-3 mt-4">
+<h4 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Selected Questions</h4>
+<!-- Item -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-1">
+<span class="font-code-md text-code-md text-primary bg-primary-fixed px-1.5 py-0.5 rounded text-xs">P-104</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full text-xs">Easy</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface truncate">Retrieve High-Value Customers</p>
+<div class="flex justify-between items-center mt-2 border-t border-outline-variant pt-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="stars">stars</span> Points
+                            </span>
+<span class="font-label-sm text-label-sm text-on-surface">--</span>
+</div>
+</div>
+<!-- Item -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-3 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-1">
+<span class="font-code-md text-code-md text-primary bg-primary-fixed px-1.5 py-0.5 rounded text-xs">P-211</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full text-xs">Medium</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface truncate">Multi-table Inner Joins for Sales Data</p>
+<div class="flex justify-between items-center mt-2 border-t border-outline-variant pt-2">
+<span class="font-body-md text-body-md text-on-surface-variant text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="stars">stars</span> Points
+                            </span>
+<span class="font-label-sm text-label-sm text-on-surface">--</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Bottom Action Bar (Fixed) -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant p-4 flex justify-between items-center px-gutter shrink-0 z-50 fixed bottom-0 left-0 right-[320px] shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+<div>
+<button class="border border-outline-variant text-on-surface hover:bg-surface-container-highest hover:border-outline font-label-sm text-label-sm rounded-lg px-6 py-2.5 transition-all">
+                Discard Changes
+            </button>
+</div>
+<div class="flex gap-4">
+<button class="border border-outline-variant text-on-surface hover:bg-surface-container-highest hover:border-outline font-label-sm text-label-sm rounded-lg px-6 py-2.5 transition-all disabled:opacity-50" disabled="">
+                Previous
+            </button>
+<button class="bg-primary text-on-primary hover:bg-primary-container hover:shadow-md font-label-sm text-label-sm rounded-lg px-6 py-2.5 transition-all flex items-center gap-2 group">
+                Continue to Problems
+                <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</footer>
+</body></html>

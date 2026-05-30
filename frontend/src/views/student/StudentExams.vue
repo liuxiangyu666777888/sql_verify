@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
-    <div class="space-y-6">
+    <div class="page-inner space-y-6">
       <header>
-        <p class="text-sm text-slate-500">My Exams</p>
-        <h1 class="text-3xl font-bold">我的考试</h1>
+        <div class="label">My Exams</div>
+        <h1 class="headline-lg">我的考试</h1>
       </header>
       <section class="panel overflow-hidden">
         <table class="table w-full">
@@ -14,7 +14,7 @@
               <td>{{ item.startTime }}</td>
               <td>{{ item.endTime }}</td>
               <td class="text-right">
-                <button class="btn-primary rounded-lg px-3 py-1.5" @click="take(item.examId)">进入</button>
+                <button class="btn-primary" @click="take(item.examId)">进入</button>
               </td>
             </tr>
           </tbody>

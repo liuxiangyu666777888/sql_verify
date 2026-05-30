@@ -1,17 +1,20 @@
 <template>
   <AppLayout>
-    <div class="max-w-7xl mx-auto space-y-6">
-      <header class="flex items-center justify-between">
+    <div class="page-inner space-y-6">
+      <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="text-sm text-slate-500">Teacher Dashboard</p>
-          <h1 class="text-3xl font-bold">课堂总览</h1>
+          <div class="label">Dashboard</div>
+          <h1 class="headline-lg">课堂总览</h1>
         </div>
-        <button class="btn-primary rounded-lg px-4 py-2" @click="$router.push('/teacher/exams/new')">新建考试</button>
+        <button class="btn-primary" @click="$router.push('/teacher/exams/new')">
+          <span class="material-symbols-outlined">add</span>
+          新建考试
+        </button>
       </header>
-      <section class="grid md:grid-cols-3 gap-4">
-        <div class="panel p-5"><p class="text-sm text-slate-500">班级数</p><div class="text-3xl font-bold mt-2">{{ dashboard.activeClasses }}</div></div>
-        <div class="panel p-5"><p class="text-sm text-slate-500">题库数</p><div class="text-3xl font-bold mt-2">{{ dashboard.totalProblems }}</div></div>
-        <div class="panel p-5"><p class="text-sm text-slate-500">待处理提交</p><div class="text-3xl font-bold mt-2 text-red-600">{{ dashboard.pendingReviews }}</div></div>
+      <section class="grid gap-6 md:grid-cols-3">
+        <div class="stat-card"><span class="material-symbols-outlined stat-icon">groups</span><div class="label">班级数</div><div class="headline-lg mt-2">{{ dashboard.activeClasses }}</div></div>
+        <div class="stat-card"><span class="material-symbols-outlined stat-icon">library_books</span><div class="label">题库数</div><div class="headline-lg mt-2">{{ dashboard.totalProblems }}</div></div>
+        <div class="stat-card"><span class="material-symbols-outlined stat-icon">pending_actions</span><div class="label">待处理提交</div><div class="headline-lg mt-2 text-red-600">{{ dashboard.pendingReviews }}</div></div>
       </section>
     </div>
   </AppLayout>

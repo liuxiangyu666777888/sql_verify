@@ -1,26 +1,75 @@
 <template>
-  <AppLayout>
-    <div class="max-w-6xl mx-auto space-y-6">
-      <header>
-        <p class="text-sm text-slate-500">Exam Wizard</p>
-        <h1 class="text-3xl font-bold">新建考试</h1>
-      </header>
+  <div class="wizard-shell">
+    <header class="topbar wizard-header">
+      <div class="topbar-left">
+        <button class="wizard-back" @click="$router.push('/teacher/dashboard')">
+          <span class="material-symbols-outlined">arrow_back</span>
+          Exit Configuration
+        </button>
+        <div class="wizard-title">New Midterm Assessment</div>
+      </div>
+      <div class="wizard-save">
+        <span class="material-symbols-outlined">cloud_done</span>
+        Draft auto-saved
+      </div>
+    </header>
 
-      <section class="panel p-6 space-y-4">
-        <h2 class="text-xl font-semibold">1. 基本参数</h2>
-        <input v-model="form.examName" class="input" placeholder="考试标题" />
-        <div class="grid md:grid-cols-2 gap-4">
-          <input v-model="form.startTime" type="datetime-local" class="input" />
-          <input v-model="form.endTime" type="datetime-local" class="input" />
+    <main class="wizard-layout">
+      <section>
+        <div class="wizard-stepper">
+          <div class="wizard-step is-active"><span>1</span><b>Configuration</b></div>
+          <div class="wizard-step"><span>2</span><b>Select Problems</b></div>
+          <div class="wizard-step"><span>3</span><b>Assign Points</b></div>
         </div>
-        <textarea v-model="form.instructions" class="input min-h-[140px]" placeholder="考试说明" />
-      </section>
 
-      <section class="panel p-6 space-y-4">
-        <h2 class="text-xl font-semibold">2. 选择题目和分值</h2>
-        <div class="overflow-hidden rounded-xl border border-slate-200">
-          <table class="table w-full">
-            <thead><tr><th>选择</th><th>题目</th><th>难度</th><th>分值</th></tr></thead>
+        <section class="wizard-panel overflow-hidden">
+          <div class="panel-header">
+            <h1 class="headline-md flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">settings</span>
+              Exam Parameters
+            </h1>
+            <p class="muted mt-1">Define the fundamental settings and timing for this assessment.</p>
+          </div>
+          <div class="space-y-8 p-6">
+            <div>
+              <label class="mb-2 block text-sm font-bold">Exam Title</label>
+              <input v-model="form.examName" class="input" placeholder="Enter an official title..." />
+            </div>
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm font-bold">Start Window</label>
+                <input v-model="form.startTime" type="datetime-local" class="input" />
+              </div>
+              <div>
+                <label class="mb-2 block text-sm font-bold">End Window</label>
+                <input v-model="form.endTime" type="datetime-local" class="input" />
+              </div>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm font-bold">Duration Limit</label>
+                <input v-model.number="durationMinutes" type="number" class="input" />
+              </div>
+              <div>
+                <label class="mb-2 block text-sm font-bold">Environment Strictness</label>
+                <div class="flex items-center justify-between rounded-lg border border-outline-variant bg-surface p-3">
+                  <span class="flex items-center gap-2"><span class="material-symbols-outlined">lock</span>Lockdown Browser</span>
+                  <input v-model="lockdownEnabled" type="checkbox" />
+                </div>
+              </div>
+            </div>
+            <textarea v-model="form.instructions" class="input min-h-[120px]" placeholder="考试说明"></textarea>
+          </div>
+        </section>
+
+        <section class="wizard-panel overflow-hidden mt-6">
+          <div class="panel-header">
+            <h2 class="headline-md">Select Problems</h2>
+          </div>
+          <table class="table">
+            <thead>
+              <tr><th>选择</th><th>题目</th><th>难度</th><th>分值</th></tr>
+            </thead>
             <tbody>
               <tr v-for="question in questions" :key="question.questionId">
                 <td><input v-model="selectedQuestionIds" type="checkbox" :value="question.questionId" /></td>
@@ -30,25 +79,32 @@
               </tr>
             </tbody>
           </table>
+        </section>
+
+        <div class="flex flex-wrap gap-3 mt-6">
+          <button class="btn-secondary" @click="saveDraft">保存草稿</button>
+          <button class="btn-primary" @click="publish">发布考试</button>
         </div>
+        <div v-if="message" class="wizard-panel p-4 text-sm mt-4">{{ message }}</div>
       </section>
 
-      <section class="panel p-6 space-y-4">
-        <h2 class="text-xl font-semibold">3. 发布</h2>
-        <p class="text-sm text-slate-500">实验版默认分配给种子学生 student1，适合完整演示教师创建考试、学生作答、成绩回收流程。</p>
-        <div class="flex flex-wrap gap-3">
-          <button class="btn-secondary rounded-lg px-4 py-2" @click="saveDraft">保存草稿</button>
-          <button class="btn-primary rounded-lg px-4 py-2" @click="publish">发布考试</button>
+      <aside class="wizard-sidebar p-5">
+        <div class="label">Live Preview</div>
+        <h2 class="headline-md mt-2">{{ form.examName }}</h2>
+        <p class="muted mt-3">{{ form.instructions }}</p>
+        <div class="mt-6 space-y-3 text-sm">
+          <div class="flex justify-between"><span>Start</span><b>{{ form.startTime }}</b></div>
+          <div class="flex justify-between"><span>End</span><b>{{ form.endTime }}</b></div>
+          <div class="flex justify-between"><span>Problems</span><b>{{ selectedQuestionIds.length }}</b></div>
+          <div class="flex justify-between"><span>Total Points</span><b>{{ totalPoints }}</b></div>
         </div>
-        <div v-if="message" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">{{ message }}</div>
-      </section>
-    </div>
-  </AppLayout>
+      </aside>
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import AppLayout from '../../components/AppLayout.vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import http from '../../api/http'
 
 const form = reactive({
@@ -57,10 +113,13 @@ const form = reactive({
   endTime: '2026-05-26T11:00',
   instructions: '请使用标准 MySQL 语法完成题目。',
 })
+const durationMinutes = ref(120)
+const lockdownEnabled = ref(false)
 const questions = ref<any[]>([])
 const selectedQuestionIds = ref<number[]>([1])
 const scores = reactive<Record<number, number>>({ 1: 100 })
 const message = ref('')
+const totalPoints = computed(() => selectedQuestionIds.value.reduce((sum, id) => sum + (scores[id] || 0), 0))
 
 function payload() {
   return {
@@ -68,8 +127,8 @@ function payload() {
     startTime: form.startTime + ':00',
     endTime: form.endTime + ':00',
     instructions: form.instructions,
-    durationMinutes: 120,
-    lockdownEnabled: false,
+    durationMinutes: durationMinutes.value,
+    lockdownEnabled: lockdownEnabled.value,
   }
 }
 
@@ -103,9 +162,6 @@ onMounted(async () => {
     if (!scores[question.questionId]) {
       scores[question.questionId] = 100
     }
-  }
-  if (!selectedQuestionIds.value.length && questions.value[0]) {
-    selectedQuestionIds.value = [questions.value[0].questionId]
   }
 })
 </script>
