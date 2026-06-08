@@ -4,6 +4,13 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
+    host: '127.0.0.1',
     port: 5173,
+    strictPort: true,
+  },
+  optimizeDeps: {
+    noDiscovery: true,
+    include: ['vue', 'vue-router', 'pinia', 'axios', 'echarts'],
+    exclude: ['monaco-editor'],
   },
 })
