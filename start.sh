@@ -46,6 +46,10 @@ warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 step() { echo -e "\n${BLUE}==>${NC} $*"; }
 
+npm_clean_env() {
+  env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u NODE_TLS_REJECT_UNAUTHORIZED "$@"
+}
+
 usage() {
   cat <<'EOF'
 SQL Judge Exam 一键启动脚本
@@ -120,6 +124,7 @@ stop_managed_services() {
   stop_pid_file "后端" "$PID_DIR/backend.pid"
   stop_pid_file "前端" "$PID_DIR/frontend.pid"
   rm -f "$PID_DIR/backend.log" "$PID_DIR/frontend.log" "$PID_DIR/mysql-check.log"
+  rm -f "$PID_DIR/backend-build.log" "$PID_DIR/frontend.log" "$PID_DIR/vite-check.log" "$PID_DIR/start.out" "$PID_DIR/start-debug.out" "$PID_DIR/start-bg-debug.out"
   rmdir "$PID_DIR" >/dev/null 2>&1 || true
 }
 
@@ -143,7 +148,8 @@ cleanup() {
 check_java() {
   require_cmd java "请安装 Java 11+。"
   local version_line major
-  version_line="$(java -version 2>&1 | head -n 1)"
+  version_line="$(java -version 2>&1)"
+  version_line="${version_line%%$'\n'*}"
   major="$(printf '%s\n' "$version_line" | awk -F'[\".]' '{print $2}')"
 
   if [ "${major:-0}" -lt 11 ] 2>/dev/null; then
@@ -246,9 +252,9 @@ install_frontend_deps_if_needed() {
   (
     cd "$FRONTEND_DIR"
     if [ -f package-lock.json ]; then
-      npm ci
+      npm_clean_env npm ci --cache /tmp/sqljudge-npm-cache --no-audit --no-fund
     else
-      npm install
+      npm_clean_env npm install --cache /tmp/sqljudge-npm-cache --no-audit --no-fund
     fi
   )
 }
@@ -258,7 +264,39 @@ check_frontend_toolchain() {
     return 0
   fi
 
-  if ! (cd "$FRONTEND_DIR" && node -e "Promise.all([import('vite'), import('vue')]).then(([, vue]) => { if (!vue.computed) throw new Error('Vue dependency is incomplete: missing computed export'); }).catch((error)=>{ console.error(error.message || error); process.exit(1); })" >/dev/null 2>"$PID_DIR/vite-check.log"); then
+  if [ -d "$FRONTEND_DIR/node_modules/@rolldown" ] || [ -d "$FRONTEND_DIR/node_modules/@oxc-project" ]; then
+    err "前端 node_modules 中存在 Vite 8 残留依赖，可能导致 Vite ready 后 HTTP 不响应。"
+    cat >&2 <<EOF
+
+请先重装前端依赖:
+  cd "$FRONTEND_DIR"
+  rm -rf node_modules
+  npm ci --cache /tmp/sqljudge-npm-cache --no-audit --no-fund
+
+然后重新执行:
+  cd "$SCRIPT_DIR"
+  ./start.sh
+EOF
+    exit 1
+  fi
+
+  if [ -f "$FRONTEND_DIR/package-lock.json" ] && grep -q '"vite": "\\^8\\|"vite": "8\\|"@vitejs/plugin-vue": "\\^6\\|"@vitejs/plugin-vue": "6' "$FRONTEND_DIR/package-lock.json"; then
+    err "前端 package-lock.json 指向 Vite 8 / Vue 插件 6，这会导致当前环境下 Vite 启动卡住。"
+    cat >&2 <<EOF
+
+请恢复稳定依赖:
+  cd "$FRONTEND_DIR"
+  rm -rf node_modules package-lock.json
+  npm install --cache /tmp/sqljudge-npm-cache --no-audit --no-fund
+
+然后重新执行:
+  cd "$SCRIPT_DIR"
+  ./start.sh
+EOF
+    exit 1
+  fi
+
+  if ! (cd "$FRONTEND_DIR" && npm_clean_env node -e "Promise.all([import('vite'), import('vue')]).then(([, vue]) => { if (!vue.computed) throw new Error('Vue dependency is incomplete: missing computed export'); }).catch((error)=>{ console.error(error.message || error); process.exit(1); })" >/dev/null 2>"$PID_DIR/vite-check.log"); then
     err "前端工具链检查失败。当前 node_modules 可能损坏，或 Vite/Rollup 与当前 Node 版本不兼容。"
     if [ -s "$PID_DIR/vite-check.log" ]; then
       tail -n 20 "$PID_DIR/vite-check.log" >&2
@@ -268,7 +306,7 @@ check_frontend_toolchain() {
 建议先重装前端依赖:
   cd "$FRONTEND_DIR"
   rm -rf node_modules
-  npm ci
+  npm ci --cache /tmp/sqljudge-npm-cache --no-audit --no-fund
 
 然后重新执行:
   cd "$SCRIPT_DIR"
@@ -300,6 +338,7 @@ start_backend() {
   log "打包后端（如依赖已缓存，通常很快）..."
   if ! (
     cd "$BACKEND_DIR"
+    rm -rf target
     ./mvnw -q -DskipTests package >"$PID_DIR/backend-build.log" 2>&1
   ); then
     err "后端打包失败，最近日志如下:"
@@ -346,7 +385,7 @@ start_frontend() {
 
   (
     cd "$FRONTEND_DIR"
-    npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT" --strictPort \
+    npm_clean_env npm run dev -- --host 127.0.0.1 --port "$FRONTEND_PORT" --strictPort \
       >"$PID_DIR/frontend.log" 2>&1
   ) &
   FRONTEND_PID=$!
@@ -446,6 +485,8 @@ trap cleanup EXIT
 trap 'exit 130' INT TERM
 
 step "检查运行环境"
+rm -rf "$PID_DIR" 2>/dev/null || true
+mkdir -p "$PID_DIR"
 check_java
 check_node
 check_mysql_connection
