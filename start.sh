@@ -494,6 +494,7 @@ ensure_database
 
 step "清理旧服务并检查端口"
 stop_managed_services
+mkdir -p "$PID_DIR"
 check_port_free "$SERVER_PORT" "后端" "SERVER_PORT"
 check_port_free "$FRONTEND_PORT" "前端" "FRONTEND_PORT"
 

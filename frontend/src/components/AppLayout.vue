@@ -1,42 +1,99 @@
 <template>
   <div class="app-shell">
-    <aside class="sidebar">
+    <nav class="sidebar">
       <div class="brand">
-        <div class="brand-mark">SQL</div>
+        <div class="brand-mark">
+          <span class="material-symbols-outlined fill-icon">database</span>
+        </div>
         <div>
-          <strong>SQL Judge</strong>
-          <span>数据库练习平台</span>
+          <div class="brand-title">Academic SQL</div>
+          <div class="brand-subtitle">Standard Edition</div>
         </div>
       </div>
 
-      <nav class="nav">
-        <RouterLink v-if="isTeacher" to="/teacher/dashboard">教师首页</RouterLink>
-        <RouterLink v-if="isTeacher" to="/teacher/questions">题目管理</RouterLink>
-        <RouterLink v-if="isTeacher" to="/teacher/exams/new">创建考试</RouterLink>
-        <RouterLink v-if="isTeacher" to="/teacher/classes">班级管理</RouterLink>
-        <RouterLink v-if="isTeacher" to="/teacher/scores">成绩统计</RouterLink>
+      <div class="nav">
+        <RouterLink v-if="isTeacher" class="nav-link" to="/teacher/dashboard">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </RouterLink>
+        <RouterLink v-if="isTeacher" class="nav-link" to="/teacher/questions">
+          <span class="material-symbols-outlined">library_books</span>
+          <span>Problem Bank</span>
+        </RouterLink>
+        <RouterLink v-if="isTeacher" class="nav-link" to="/teacher/exams/new">
+          <span class="material-symbols-outlined">assignment_add</span>
+          <span>Configure Exam</span>
+        </RouterLink>
+        <RouterLink v-if="isTeacher" class="nav-link" to="/teacher/classes">
+          <span class="material-symbols-outlined">groups</span>
+          <span>Classroom</span>
+        </RouterLink>
+        <RouterLink v-if="isTeacher" class="nav-link" to="/teacher/scores">
+          <span class="material-symbols-outlined">analytics</span>
+          <span>Gradebook</span>
+        </RouterLink>
 
-        <RouterLink v-if="!isTeacher" to="/student/dashboard">学生首页</RouterLink>
-        <RouterLink v-if="!isTeacher" to="/problems">题库练习</RouterLink>
-        <RouterLink v-if="!isTeacher" to="/student/exams">我的考试</RouterLink>
-        <RouterLink v-if="!isTeacher" to="/student/submissions">提交记录</RouterLink>
-        <RouterLink v-if="!isTeacher" to="/student/classes">我的班级</RouterLink>
-      </nav>
-    </aside>
+        <RouterLink v-if="!isTeacher" class="nav-link" to="/student/dashboard">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span>Dashboard</span>
+        </RouterLink>
+        <RouterLink v-if="!isTeacher" class="nav-link" to="/problems">
+          <span class="material-symbols-outlined">task_alt</span>
+          <span>Solved Problems</span>
+        </RouterLink>
+        <RouterLink v-if="!isTeacher" class="nav-link" to="/student/submissions">
+          <span class="material-symbols-outlined">history</span>
+          <span>My Submissions</span>
+        </RouterLink>
+        <RouterLink v-if="!isTeacher" class="nav-link" to="/student/exams">
+          <span class="material-symbols-outlined">school</span>
+          <span>Learning Paths</span>
+        </RouterLink>
+        <RouterLink v-if="!isTeacher" class="nav-link" to="/student/classes">
+          <span class="material-symbols-outlined">groups</span>
+          <span>Classroom</span>
+        </RouterLink>
+      </div>
 
-    <main class="main">
+      <div class="sidebar-footer">
+        <a href="#">
+          <span class="material-symbols-outlined">menu_book</span>
+          <span>Documentation</span>
+        </a>
+        <a href="#">
+          <span class="material-symbols-outlined">help_outline</span>
+          <span>Help Center</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="workspace">
       <header class="topbar">
-        <div>
-          <div class="eyebrow">SQL Practice</div>
-          <h1>{{ isTeacher ? '教师工作台' : '学生练习中心' }}</h1>
+        <div class="mobile-brand">
+          <span class="material-symbols-outlined">database</span>
+          <span>SQL Master</span>
         </div>
-        <div class="userbar">
-          <span>{{ auth.user?.realName || auth.user?.username || '用户' }}</span>
+        <div class="search-box">
+          <span class="material-symbols-outlined">search</span>
+          <input placeholder="Search problems, articles..." />
+        </div>
+        <div class="top-actions">
+          <button class="top-icon" aria-label="Notifications">
+            <span class="material-symbols-outlined">notifications</span>
+            <span class="notice-dot"></span>
+          </button>
+          <button class="top-icon" aria-label="Settings">
+            <span class="material-symbols-outlined">settings</span>
+          </button>
           <button class="btn-secondary" @click="logout">退出</button>
+          <div class="avatar">{{ avatarText }}</div>
         </div>
       </header>
-      <slot />
-    </main>
+
+      <main class="content">
+        <slot />
+      </main>
+    </div>
   </div>
 </template>
 
@@ -47,7 +104,9 @@ import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
-const isTeacher = computed(() => ['TEACHER', 'ADMIN'].includes(auth.user?.role || localStorage.getItem('role') || ''))
+const role = computed(() => auth.user?.role || localStorage.getItem('role') || '')
+const isTeacher = computed(() => ['TEACHER', 'ADMIN'].includes(role.value))
+const avatarText = computed(() => (auth.user?.realName || auth.user?.username || 'U').slice(0, 1).toUpperCase())
 
 function logout() {
   auth.logout()
