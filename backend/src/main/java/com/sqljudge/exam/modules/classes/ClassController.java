@@ -1,6 +1,7 @@
 package com.sqljudge.exam.modules.classes;
 
 import com.sqljudge.exam.common.ApiResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,9 @@ public class ClassController {
     }
 
     @PostMapping("/join")
+    @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<String> join(@RequestBody Map<String, String> request) {
+        classService.join(request.get("inviteCode"));
         return ApiResponse.ok("ok");
     }
 }

@@ -7,9 +7,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.OK)
     public ApiResponse<Void> handleBusiness(BusinessException ex) {
@@ -31,6 +35,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.OK)
     public ApiResponse<Void> handleUnknown(Exception ex) {
-        return ApiResponse.fail(50000, ex.getMessage() == null ? "服务端错误" : ex.getMessage());
+        log.error("Unhandled server exception", ex);
+        return ApiResponse.fail(50000, "服务端错误，请联系管理员");
     }
 }
