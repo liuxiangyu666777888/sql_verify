@@ -56,6 +56,12 @@ public class ExamController {
         return ApiResponse.ok(examService.scores(examId));
     }
 
+    @GetMapping("/student-options")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<List<StudentOptionResponse>> studentOptions() {
+        return ApiResponse.ok(examService.studentOptions());
+    }
+
     @PostMapping("/{examId}/publish")
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<String> publish(@PathVariable Long examId) {

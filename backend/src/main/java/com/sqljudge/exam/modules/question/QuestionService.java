@@ -80,10 +80,7 @@ public class QuestionService {
     }
 
     public QuestionRecord update(Long id, QuestionRequest request) {
-        QuestionRecord existing = questionMapper.findById(id);
-        if (existing == null) {
-            throw BusinessException.notFound("题目不存在");
-        }
+        QuestionRecord existing = detail(id);
         QuestionRecord record = toRecord(request);
         record.setQuestionId(id);
         record.setCreatorId(existing.getCreatorId());
@@ -92,10 +89,7 @@ public class QuestionService {
     }
 
     public void delete(Long id) {
-        QuestionRecord existing = questionMapper.findById(id);
-        if (existing == null) {
-            throw BusinessException.notFound("题目不存在");
-        }
+        detail(id);
         questionMapper.hide(id);
     }
 

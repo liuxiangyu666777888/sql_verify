@@ -7,6 +7,9 @@ import java.util.Map;
 
 @Mapper
 public interface ExamMapper {
+    @Select("select * from exams order by start_time desc")
+    List<ExamRecord> listAll();
+
     @Select("select * from exams where creator_id = #{creatorId} order by start_time desc")
     List<ExamRecord> listByCreator(@Param("creatorId") Long creatorId);
 
@@ -15,6 +18,12 @@ public interface ExamMapper {
 
     @Select("select * from exams where exam_id = #{examId}")
     ExamRecord findById(@Param("examId") Long examId);
+
+    @Select("select count(*) from exam_students where exam_id = #{examId} and student_id = #{studentId}")
+    int countExamStudent(@Param("examId") Long examId, @Param("studentId") Long studentId);
+
+    @Select("select count(*) from exam_questions where exam_id = #{examId} and question_id = #{questionId}")
+    int countExamQuestion(@Param("examId") Long examId, @Param("questionId") Long questionId);
 
     @Insert("insert into exams(exam_name, start_time, end_time, duration_minutes, instructions, lockdown_enabled, status, creator_id) "
             + "values(#{examName}, #{startTime}, #{endTime}, #{durationMinutes}, #{instructions}, #{lockdownEnabled}, #{status}, #{creatorId})")

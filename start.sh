@@ -344,9 +344,11 @@ start_backend() {
     exit 1
   fi
 
+  cp "$BACKEND_DIR/target/exam-0.0.1-SNAPSHOT.jar" "$PID_DIR/backend-run.jar"
+
   (
-    cd "$BACKEND_DIR"
-    java -Dfile.encoding=UTF-8 -jar target/exam-0.0.1-SNAPSHOT.jar \
+    cd "$SCRIPT_DIR"
+    java -Dfile.encoding=UTF-8 -jar "$PID_DIR/backend-run.jar" \
       >"$PID_DIR/backend.log" 2>&1
   ) &
   BACKEND_PID=$!

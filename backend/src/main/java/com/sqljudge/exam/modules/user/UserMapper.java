@@ -1,8 +1,8 @@
 package com.sqljudge.exam.modules.user;
 
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -18,6 +18,9 @@ public interface UserMapper {
 
     @Select("select * from users order by user_id asc")
     List<UserRecord> listAll();
+
+    @Select("select * from users where role = #{role} and status = 'ACTIVE' order by username asc")
+    List<UserRecord> listActiveByRole(@Param("role") String role);
 
     @Insert("insert into users(username, password_hash, real_name, email, role, status) values(#{username}, #{passwordHash}, #{realName}, #{email}, #{role}, 'ACTIVE')")
     void insert(UserRecord record);

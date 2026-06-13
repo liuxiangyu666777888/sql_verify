@@ -2,6 +2,8 @@
 .tools/
 .superpowers/
 docs/superpowers/
+.pids/
+start-bg.out
 
 backend/target/
 backend/.mvn/

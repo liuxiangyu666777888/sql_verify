@@ -3,6 +3,7 @@ package com.sqljudge.exam.modules.classes;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -20,6 +21,10 @@ public interface ClassMapper {
 
     @Select("select * from classes where invite_code = #{inviteCode}")
     ClassRecord findByInviteCode(@Param("inviteCode") String inviteCode);
+
+    @Insert("insert into classes(class_name, teacher_id, semester, invite_code) values(#{className}, #{teacherId}, #{semester}, #{inviteCode})")
+    @Options(useGeneratedKeys = true, keyProperty = "classId")
+    void insert(ClassRecord record);
 
     @Insert("insert into student_class(student_id, class_id, status) values(#{studentId}, #{classId}, 'ACTIVE') "
             + "on duplicate key update status = 'ACTIVE'")

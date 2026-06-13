@@ -21,6 +21,12 @@ public class ClassController {
         return ApiResponse.ok(classService.listMine());
     }
 
+    @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<ClassRecord> create(@RequestBody ClassRequest request) {
+        return ApiResponse.ok(classService.create(request));
+    }
+
     @PostMapping("/join")
     @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<String> join(@RequestBody Map<String, String> request) {

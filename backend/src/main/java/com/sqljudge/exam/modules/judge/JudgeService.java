@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -256,6 +257,10 @@ public class JudgeService {
             Statement statement = CCJSqlParserUtil.parse(sql);
             if (!(statement instanceof Select)) {
                 throw BusinessException.forbidden("只允许SELECT查询");
+            }
+            Select select = (Select) statement;
+            if (!(select.getSelectBody() instanceof PlainSelect)) {
+                throw BusinessException.forbidden("只允许单个SELECT查询");
             }
         } catch (JSQLParserException ex) {
             throw BusinessException.badRequest("SQL语法错误");
