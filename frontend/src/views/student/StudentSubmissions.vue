@@ -9,11 +9,11 @@
         <table class="table w-full">
           <thead><tr><th>题目</th><th>状态</th><th>得分</th><th>时间</th></tr></thead>
           <tbody>
-            <tr v-for="item in list" :key="item.submission_id || item.submissionId">
+            <tr v-for="item in list" :key="item.submissionId">
               <td>{{ item.title }}</td>
               <td>{{ item.status }}</td>
               <td>{{ item.score }}</td>
-              <td>{{ item.submit_time || item.submitTime }}</td>
+              <td>{{ item.submitTime }}</td>
             </tr>
           </tbody>
         </table>

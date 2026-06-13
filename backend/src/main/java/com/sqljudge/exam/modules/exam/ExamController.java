@@ -27,6 +27,19 @@ public class ExamController {
         return ApiResponse.ok(examService.create(request));
     }
 
+    @PutMapping("/{examId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<ExamRecord> update(@PathVariable Long examId, @RequestBody ExamRequest request) {
+        return ApiResponse.ok(examService.update(examId, request));
+    }
+
+    @DeleteMapping("/{examId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<String> delete(@PathVariable Long examId) {
+        examService.delete(examId);
+        return ApiResponse.ok("ok");
+    }
+
     @GetMapping("/{examId}")
     public ApiResponse<ExamRecord> detail(@PathVariable Long examId) {
         return ApiResponse.ok(examService.detail(examId));

@@ -125,7 +125,6 @@ stop_managed_services() {
   stop_pid_file "前端" "$PID_DIR/frontend.pid"
   rm -f "$PID_DIR/backend.log" "$PID_DIR/frontend.log" "$PID_DIR/mysql-check.log"
   rm -f "$PID_DIR/backend-build.log" "$PID_DIR/frontend.log" "$PID_DIR/vite-check.log" "$PID_DIR/start.out" "$PID_DIR/start-debug.out" "$PID_DIR/start-bg-debug.out"
-  rmdir "$PID_DIR" >/dev/null 2>&1 || true
 }
 
 cleanup() {
@@ -141,7 +140,6 @@ cleanup() {
     log "所有服务已关闭"
   elif [ -d "$PID_DIR" ]; then
     rm -f "$PID_DIR/mysql-check.log"
-    rmdir "$PID_DIR" >/dev/null 2>&1 || true
   fi
 }
 

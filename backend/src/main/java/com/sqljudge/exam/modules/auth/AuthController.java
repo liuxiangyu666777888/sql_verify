@@ -2,6 +2,7 @@ package com.sqljudge.exam.modules.auth;
 
 import com.sqljudge.exam.common.ApiResponse;
 import com.sqljudge.exam.modules.auth.dto.AuthResponse;
+import com.sqljudge.exam.modules.auth.dto.ChangePasswordRequest;
 import com.sqljudge.exam.modules.auth.dto.LoginRequest;
 import com.sqljudge.exam.modules.auth.dto.RegisterRequest;
 import org.springframework.validation.annotation.Validated;
@@ -29,5 +30,11 @@ public class AuthController {
     @GetMapping("/me")
     public ApiResponse<AuthResponse.UserInfo> me() {
         return ApiResponse.ok(authService.me());
+    }
+
+    @PostMapping("/change-password")
+    public ApiResponse<String> changePassword(@Validated @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return ApiResponse.ok("ok");
     }
 }

@@ -13,6 +13,7 @@ import ExamTake from '../views/student/ExamTake.vue'
 import TeacherQuestions from '../views/teacher/TeacherQuestions.vue'
 import TeacherClasses from '../views/teacher/TeacherClasses.vue'
 import TeacherScores from '../views/teacher/TeacherScores.vue'
+import AdminUsers from '../views/admin/AdminUsers.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -29,6 +30,7 @@ const routes = [
   { path: '/teacher/classes', component: TeacherClasses },
   { path: '/teacher/scores', component: TeacherScores },
   { path: '/teacher/exams/new', component: ExamWizard },
+  { path: '/admin/users', component: AdminUsers },
 ]
 
 const router = createRouter({
@@ -38,12 +40,16 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const auth = useAuthStore()
+  auth.restore()
   const token = localStorage.getItem('token')
   if (to.path !== '/login' && !token) {
     return '/login'
   }
   if (to.path.startsWith('/teacher') && auth.user?.role && !['TEACHER', 'ADMIN'].includes(auth.user.role)) {
     return '/student/dashboard'
+  }
+  if (to.path.startsWith('/admin') && auth.user?.role && auth.user.role !== 'ADMIN') {
+    return auth.user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'
   }
   return true
 })

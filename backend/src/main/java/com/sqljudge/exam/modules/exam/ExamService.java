@@ -24,23 +24,32 @@ public class ExamService {
     }
 
     public ExamRecord create(ExamRequest request) {
-        if (request.getExamName() == null || request.getExamName().trim().isEmpty()) {
-            throw BusinessException.badRequest("考试名称不能为空");
-        }
-        if (request.getStartTime() == null || request.getEndTime() == null || !request.getEndTime().isAfter(request.getStartTime())) {
-            throw BusinessException.badRequest("考试时间不合法");
-        }
-        ExamRecord record = new ExamRecord();
-        record.setExamName(request.getExamName());
-        record.setStartTime(request.getStartTime());
-        record.setEndTime(request.getEndTime());
-        record.setDurationMinutes(request.getDurationMinutes());
-        record.setInstructions(request.getInstructions());
-        record.setLockdownEnabled(Boolean.TRUE.equals(request.getLockdownEnabled()) ? 1 : 0);
+        ExamRecord record = toRecord(request);
         record.setStatus("DRAFT");
         record.setCreatorId(CurrentUser.id());
         examMapper.insert(record);
         return record;
+    }
+
+    public ExamRecord update(Long examId, ExamRequest request) {
+        ExamRecord existing = detail(examId);
+        if (!"ADMIN".equals(CurrentUser.role()) && !CurrentUser.id().equals(existing.getCreatorId())) {
+            throw BusinessException.forbidden("无权修改该考试");
+        }
+        ExamRecord record = toRecord(request);
+        record.setExamId(examId);
+        record.setCreatorId(existing.getCreatorId());
+        record.setStatus(existing.getStatus());
+        examMapper.update(record);
+        return detail(examId);
+    }
+
+    public void delete(Long examId) {
+        ExamRecord existing = detail(examId);
+        if (!"ADMIN".equals(CurrentUser.role()) && !CurrentUser.id().equals(existing.getCreatorId())) {
+            throw BusinessException.forbidden("无权删除该考试");
+        }
+        examMapper.updateStatus(examId, "ARCHIVED");
     }
 
     public ExamRecord detail(Long examId) {
@@ -91,5 +100,22 @@ public class ExamService {
         if (examId != null) {
             examMapper.updateStudentStatus(examId, studentId, "SUBMITTED");
         }
+    }
+
+    private ExamRecord toRecord(ExamRequest request) {
+        if (request.getExamName() == null || request.getExamName().trim().isEmpty()) {
+            throw BusinessException.badRequest("考试名称不能为空");
+        }
+        if (request.getStartTime() == null || request.getEndTime() == null || !request.getEndTime().isAfter(request.getStartTime())) {
+            throw BusinessException.badRequest("考试时间不合法");
+        }
+        ExamRecord record = new ExamRecord();
+        record.setExamName(request.getExamName().trim());
+        record.setStartTime(request.getStartTime());
+        record.setEndTime(request.getEndTime());
+        record.setDurationMinutes(request.getDurationMinutes());
+        record.setInstructions(request.getInstructions());
+        record.setLockdownEnabled(Boolean.TRUE.equals(request.getLockdownEnabled()) ? 1 : 0);
+        return record;
     }
 }

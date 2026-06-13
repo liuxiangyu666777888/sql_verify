@@ -16,7 +16,11 @@ public interface SubmissionMapper {
     @Options(useGeneratedKeys = true, keyProperty = "submissionId")
     void insert(SubmissionRecord record);
 
-    @Select("select s.*, q.title from submissions s join questions q on q.question_id = s.question_id where s.user_id = #{userId} order by s.submit_time desc limit 50")
+    @Select("select s.submission_id as submissionId, s.user_id as userId, s.question_id as questionId, s.exam_id as examId, "
+            + "s.sql_code as sqlCode, s.status, s.score, s.runtime_ms as runtimeMs, s.error_message as errorMessage, "
+            + "s.result_preview as resultPreview, s.submit_time as submitTime, q.title "
+            + "from submissions s join questions q on q.question_id = s.question_id "
+            + "where s.user_id = #{userId} order by s.submit_time desc limit 50")
     List<Map<String, Object>> listMine(@Param("userId") Long userId);
 
     @Select("select count(distinct question_id) from submissions where user_id = #{userId} and status = 'AC'")
@@ -27,4 +31,10 @@ public interface SubmissionMapper {
 
     @Select("select count(*) from submissions where user_id = #{userId} and status = 'AC'")
     int acCount(@Param("userId") Long userId);
+
+    @Select("select distinct date(submit_time) from submissions where user_id = #{userId} and status = 'AC' order by date(submit_time) desc limit 90")
+    List<java.time.LocalDate> recentAcDates(@Param("userId") Long userId);
+
+    @Select("select count(*) from submissions s join exams e on e.exam_id = s.exam_id where e.creator_id = #{teacherId} and s.status = 'PENDING'")
+    int pendingReviewCount(@Param("teacherId") Long teacherId);
 }

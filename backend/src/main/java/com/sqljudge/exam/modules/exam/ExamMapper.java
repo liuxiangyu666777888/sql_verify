@@ -21,6 +21,10 @@ public interface ExamMapper {
     @Options(useGeneratedKeys = true, keyProperty = "examId")
     void insert(ExamRecord record);
 
+    @Update("update exams set exam_name = #{examName}, start_time = #{startTime}, end_time = #{endTime}, duration_minutes = #{durationMinutes}, "
+            + "instructions = #{instructions}, lockdown_enabled = #{lockdownEnabled} where exam_id = #{examId}")
+    void update(ExamRecord record);
+
     @Insert("insert into exam_questions(exam_id, question_id, score, question_order) values(#{examId}, #{questionId}, #{score}, #{questionOrder}) "
             + "on duplicate key update score = values(score), question_order = values(question_order)")
     void insertExamQuestion(@Param("examId") Long examId, @Param("questionId") Long questionId, @Param("score") double score, @Param("questionOrder") int questionOrder);

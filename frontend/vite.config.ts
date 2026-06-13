@@ -10,7 +10,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     noDiscovery: true,
-    include: ['vue', 'vue-router', 'pinia', 'axios', 'echarts'],
-    exclude: ['monaco-editor'],
+    include: ['vue', 'vue-router', 'pinia', 'axios'],
   },
 })

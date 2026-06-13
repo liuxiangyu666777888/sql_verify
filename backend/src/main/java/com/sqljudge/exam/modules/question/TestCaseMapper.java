@@ -10,4 +10,7 @@ import java.util.List;
 public interface TestCaseMapper {
     @Select("select * from test_cases where question_id = #{questionId} and is_hidden = 0 order by case_order")
     List<TestCaseRecord> listVisibleByQuestionId(@Param("questionId") Long questionId);
+
+    @Select("select * from test_cases where question_id = #{questionId} order by case_order")
+    List<TestCaseRecord> listByQuestionId(@Param("questionId") Long questionId);
 }

@@ -3,6 +3,7 @@ package com.sqljudge.exam.modules.auth;
 import com.sqljudge.exam.common.BusinessException;
 import com.sqljudge.exam.common.CurrentUser;
 import com.sqljudge.exam.modules.auth.dto.AuthResponse;
+import com.sqljudge.exam.modules.auth.dto.ChangePasswordRequest;
 import com.sqljudge.exam.modules.auth.dto.LoginRequest;
 import com.sqljudge.exam.modules.auth.dto.RegisterRequest;
 import com.sqljudge.exam.modules.user.UserMapper;
@@ -44,5 +45,25 @@ public class AuthService {
     public AuthResponse.UserInfo me() {
         UserRecord record = userMapper.findById(CurrentUser.id());
         return new AuthResponse.UserInfo(record.getUserId(), record.getUsername(), record.getRealName(), record.getRole());
+    }
+
+    public void changePassword(ChangePasswordRequest request) {
+        if (request == null || request.getOldPassword() == null || request.getOldPassword().isEmpty()) {
+            throw BusinessException.badRequest("旧密码不能为空");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().length() < 6) {
+            throw BusinessException.badRequest("新密码至少需要 6 位");
+        }
+        if (request.getOldPassword().equals(request.getNewPassword())) {
+            throw BusinessException.badRequest("新密码不能与旧密码相同");
+        }
+        UserRecord record = userMapper.findById(CurrentUser.id());
+        if (record == null) {
+            throw BusinessException.unauthorized("未登录");
+        }
+        if (!passwordEncoder.matches(request.getOldPassword(), record.getPasswordHash())) {
+            throw BusinessException.badRequest("旧密码不正确");
+        }
+        userMapper.updatePasswordHashById(record.getUserId(), passwordEncoder.encode(request.getNewPassword()));
     }
 }

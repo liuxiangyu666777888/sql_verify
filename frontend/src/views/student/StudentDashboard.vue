@@ -98,7 +98,7 @@
               <span class="material-symbols-outlined text-on-surface-variant">database</span>
             </div>
             <h4 class="font-bold">{{ q.title }}</h4>
-            <p class="muted mt-2 line-clamp-3 text-sm">{{ q.description }}</p>
+            <p class="muted mt-2 line-clamp-3 text-sm">{{ q.tags || 'SQL practice challenge' }}</p>
             <button class="btn-secondary mt-4" @click="$router.push(`/problems/${q.questionId}`)">
               Solve Challenge
             </button>
@@ -123,7 +123,7 @@ const dashboard = reactive({
   streakDays: 0,
   upcomingExams: [] as Array<{ examId: number; examName: string; startTime: string; endTime: string }>,
 })
-const recommended = ref<Array<{ questionId: number; title: string; description: string; difficulty: string }>>([])
+const recommended = ref<Array<{ questionId: number; title: string; difficulty: string; tags?: string }>>([])
 const ringPercent = computed(() => Math.min(100, Math.max(0, Math.round((dashboard.solvedCount / 200) * 100))))
 
 onMounted(async () => {
@@ -137,7 +137,7 @@ onMounted(async () => {
   if (!recommended.value.length) {
     try {
       const { data } = await http.get('/questions')
-      recommended.value = data.data.slice(0, 6)
+      recommended.value = (data.data.items || []).slice(0, 6)
     } catch (_) {
       recommended.value = []
     }
