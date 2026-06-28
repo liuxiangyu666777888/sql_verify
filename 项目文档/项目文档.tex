@@ -55,12 +55,12 @@
 \begin{enumerate}[leftmargin=2em]
   \item \textbf{用户认证}：注册、登录、JWT 鉴权、密码修改。注册接口已锁定，新用户由管理员创建。
   \item \textbf{题库管理}：教师创建/编辑/删除题目，支持 Markdown 题面、表结构展示、难度分级、标签分类。学生浏览和搜索题目。
-  \item \textbf{SQL 判题}：学生在 Monaco Editor 中编写 SQL，支持运行自测和正式提交。系统自动执行判题，返回 AC/WA/ERROR/TLE/FORBIDDEN 状态。
+  \item \textbf{SQL 判题}：学生在浏览器端编写 SQL，支持运行自测和正式提交。系统自动执行判题，返回 AC/WA/ERROR/TLE/FORBIDDEN 状态。
   \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答。支持多题导航、独立草稿、自动交卷。
   \item \textbf{班级管理}：教师创建班级并生成邀请码，学生通过邀请码加入班级。
   \item \textbf{成绩统计}：教师查看考试成绩排名、平均分、最高分。成绩由服务端自动汇总每题最高分，不可前端篡改。
   \item \textbf{用户管理}：管理员创建/编辑用户，调整角色和账号状态。
-  \item \textbf{仪表盘}：学生端展示已解决题目数、正确率、连续练习天数、即将考试、推荐题目。教师端展示班级数、题库量、待处理提交、最近考试。
+  \item \textbf{仪表盘}：学生端展示已解决题目数、正确率、连续练习天数、即将考试、可用题目列表。教师端展示班级数、题库量、待处理提交、最近考试。
 \end{enumerate}
 
 % ===================================================================
@@ -113,6 +113,7 @@ CREATE TABLE classes (
   updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_classes_invite_code (invite_code),
   FOREIGN KEY (teacher_id) REFERENCES users(user_id)
+  INDEX idx_classes_teacher (teacher_id),
     ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB;
 \end{lstlisting}
@@ -149,6 +150,7 @@ CREATE TABLE questions (
   created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_questions_difficulty (difficulty),
+  INDEX idx_questions_creator (creator_id),
   FOREIGN KEY (creator_id) REFERENCES users(user_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB;
@@ -187,6 +189,8 @@ CREATE TABLE exams (
   created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT ck_exams_time CHECK (end_time > start_time),
+  INDEX idx_exams_creator (creator_id),
+  INDEX idx_exams_time (start_time, end_time),
   CONSTRAINT ck_exams_duration CHECK (duration_minutes IS NULL OR duration_minutes > 0),
   FOREIGN KEY (creator_id) REFERENCES users(user_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT
@@ -249,6 +253,7 @@ CREATE TABLE submissions (
   submit_time   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT ck_submissions_score CHECK (score >= 0),
   INDEX idx_submissions_user_time (user_id, submit_time),
+  INDEX idx_submissions_question (question_id),
   INDEX idx_submissions_exam_user (exam_id, user_id),
   FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
@@ -280,7 +285,7 @@ CREATE TABLE submissions (
 
 \begin{itemize}
   \item \textbf{允许}：SELECT、WITH（CTE）、JOIN、GROUP BY、HAVING、子查询、窗口函数等。
-  \item \textbf{禁止}：INSERT、UPDATE、DELETE、DROP、ALTER、CREATE、TRUNCATE、GRANT、REVOKE、CALL、LOAD DATA，以及任何形式的多语句执行。
+  \item \textbf{禁止}：INSERT、UPDATE、DELETE、DROP、ALTER、CREATE、TRUNCATE、GRANT、REVOKE、LOAD DATA，以及任何形式的多语句执行。
 \end{itemize}
 
 后续如需支持 DML 类题目，需要单独扩展执行策略和结果比对方式。
@@ -289,11 +294,11 @@ CREATE TABLE submissions (
 
 \subsubsection*{第一层：关键字黑名单}
 
-在 SQL 字符串层面检查是否包含禁止的关键字：DROP、INSERT、UPDATE、DELETE、ALTER、CREATE、TRUNCATE、GRANT、REVOKE、CALL。命中任一关键字直接返回 FORBIDDEN。
+在 SQL 字符串层面检查是否包含禁止的关键字：INSERT、UPDATE、DELETE、DROP、ALTER、CREATE、TRUNCATE、GRANT、REVOKE，共 9 个。命中任一关键字直接返回 FORBIDDEN。
 
 \subsubsection*{第二层：分号计数}
 
-统计 SQL 字符串中分号的数量。通过比较首个分号和末个分号的字符串位置来判断：如果首尾分号位置不同，说明存在多个分号即多语句，拒绝执行。字符串常量内部的分号不会被计入。
+通过 \texttt{indexOf(`;') != lastIndexOf(`;')} 比较首个分号和末个分号的字符串位置来判断：如果两者不同说明存在至少两个分号即多语句，拒绝执行。此方法无法区分字符串常量内的分号，但单个分号（含在字符串内的）不会被误拦。
 
 \subsubsection*{第三层：JSqlParser AST 解析}
 
@@ -311,7 +316,7 @@ CREATE TABLE submissions (
   \begin{enumerate}
     \item 创建临时 MySQL Schema，命名格式为 \texttt{judge\_\{questionId\}\_\{timestamp\}\_\{uuid\}}。
     \item 执行测试用例的 \texttt{input\_sql} 初始化表和数据。
-    \item 使用低权限 MySQL 账号执行学生 SQL，设置 \texttt{maxExecutionTime} = 5 秒。
+    \item 使用低权限 MySQL 账号执行学生 SQL，设置 \texttt{setQueryTimeout} = 5 秒。
     \item 读取结果集，转为规范化 JSON 格式。
     \item 与 \texttt{expected\_output} 逐项比对。
     \item 在 \texttt{finally} 块中删除临时 Schema。
@@ -338,9 +343,9 @@ CREATE TABLE submissions (
 \begin{enumerate}[leftmargin=2em]
   \item 判题 MySQL 用户仅拥有临时 Schema 下的权限，不拥有业务库 \texttt{sql\_exam} 的任何权限。
   \item 每次执行使用独立 JDBC 连接，设置语句超时。
-  \item JDBC 连接禁用 \texttt{allowMultiQueries=true}。
+  \item 创建 Schema 和初始化表结构使用管理员连接（需 \texttt{allowMultiQueries}），执行学生 SQL 使用独立低权限连接。
   \item SQL 提交前做语法级检查：关键字黑名单 → 分号计数 → JSqlParser AST 解析。
-  \item 单次查询限制返回最多 1000 行。
+  \item 单次查询结果行数受配置约束（\texttt{max-rows}），防止超大结果集拖垮服务。
   \item 判题失败也必须清理临时 Schema，清理逻辑放在 \texttt{finally} 块中保证执行。
   \item 测试用例的初始化 SQL 只能由教师创建，学生不可编辑。
 \end{enumerate}
@@ -368,10 +373,10 @@ API 文档 & Springdoc OpenAPI & Swagger UI 自动生成 \\
 前端框架 & Vue 3.4 + TypeScript & Composition API，\texttt{<script setup>} \\
 构建     & Vite 5.4 & 开发热更新，生产构建 \\
 状态管理 & Pinia 2.1 & Auth Store 管理登录态 \\
-路由     & Vue Router 4.3 & 16 条路由，角色级导航守卫 \\
+路由     & Vue Router 4.3 & 15 条路由，角色级导航守卫 \\
 HTTP     & Axios 1.6 & JWT 拦截器，401 自动跳转登录 \\
 样式     & Tailwind CSS 3.4 & 自定义设计令牌（颜色、字体、间距） \\
-编辑器   & Monaco Editor & SQL 语法高亮、自动补全、快捷键 \\
+SQL 输入 & \texttt{<textarea>} & 原生文本输入，草稿 localStorage 自动保存 \\
 \hline
 \end{tabular}
 \end{table}
@@ -407,7 +412,7 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 班级 CRUD。教师创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师调用加入接口返回 403。
 
 \item[dashboard 模块（2 文件 / 116 行）]
-学生仪表盘：已解题目数（日常练习不同题目 AC 数）、正确率（总 AC / 总提交）、连续练习天数（AC 提交日期去重后倒推连续天数）、即将考试列表、推荐题目。教师仪表盘：活跃班级数、题库总量、待处理提交（ERROR / FORBIDDEN 状态）、最近考试列表。
+学生仪表盘：已解题目数（日常练习不同题目 AC 数）、正确率（总 AC / 总提交）、连续练习天数（AC 提交日期去重后倒推连续天数）、即将考试列表、可用题目列表。教师仪表盘：活跃班级数、题库总量、待处理提交（PENDING 状态）、最近考试列表。
 
 \item[user 模块（3 文件 / 90 行）]
 用户实体（\texttt{UserRecord}）、数据访问（\texttt{UserMapper}）、种子用户初始化（\texttt{SeedUserInitializer} —— 启动时检查并确保三个默认账号存在，密码使用 BCrypt 哈希）。
@@ -416,28 +421,28 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 
 \subsection{前端模块划分}
 
-前端共 23 个 Vue 文件，约 2350 行代码（含 TypeScript）。
+前端共 24 个 Vue 文件，约 2500 行代码（含 TypeScript）。
 
 \subsubsection*{核心基础设施}
 
 \begin{itemize}
   \item \texttt{api/http.ts}：Axios 实例封装，请求拦截器自动添加 JWT Bearer Token，响应拦截器拦截 401 自动跳转登录页。
   \item \texttt{stores/auth.ts}：Pinia Auth Store，管理 token 和 user 状态。\texttt{login()} 调接口存 token 到 localStorage，\texttt{fetchMe()} 获取当前用户信息，\texttt{logout()} 清除状态跳转登录页，页面刷新时从 localStorage 恢复登录态。
-  \item \texttt{router/index.ts}：16 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师路由（/teacher/*）、管理员路由（/admin/*）。路由守卫检查 Pinia auth store 的角色字段，学生访问教师路由自动重定向到学生仪表盘，反之同理。未登录访问任何受保护路由都重定向 /login。
+  \item \texttt{router/index.ts}：15 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师路由（/teacher/*）、管理员路由（/admin/*）。路由守卫检查 Pinia auth store 的角色字段，学生访问教师路由自动重定向到学生仪表盘，反之同理。未登录访问任何受保护路由都重定向 /login。
 \end{itemize}
 
 \subsubsection*{组件（9 个）}
 
 \begin{itemize}
   \item \texttt{AppLayout.vue}（223 行）：全局布局，包含侧边导航栏（按角色动态渲染菜单）、顶部搜索栏（回车跳转题库搜索）、设置面板（修改密码弹窗）。
-  \item \texttt{SqlEditor.vue}（57 行）：Monaco Editor 封装，\texttt{v-model} 双向绑定 SQL 代码，注册 MySQL 语言支持。
+  \item \texttt{SqlEditor.vue}（57 行）：SQL 编辑器组件封装，\texttt{v-model} 双向绑定 SQL 代码。
   \item \texttt{StatCard.vue}（29 行）：仪表盘统计卡片，展示图标、标签、数值、副标题。
   \item \texttt{ProgressRing.vue}（42 行）：环形进度条组件，用于展示正确率等百分比指标。
   \item \texttt{BarChart.vue}（30 行）：柱状图组件，用于教师端统计展示。
   \item \texttt{WelcomeBanner.vue}、\texttt{ProblemCard.vue}、\texttt{ExamCard.vue}、\texttt{ActivityFeed.vue}：辅助展示组件。
 \end{itemize}
 
-\subsubsection*{页面路由表（16 条）}
+\subsubsection*{页面路由表（14 条）}
 
 \begin{table}[h]
 \centering
