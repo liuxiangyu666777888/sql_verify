@@ -69,137 +69,14 @@
 
 \subsection{概念模型（E-R 图）}
 
-系统包含 9 张核心数据表，实体关系如下：
+系统包含 9 张核心数据表，实体关系如图 \ref{fig:er} 所示。
 
-\begin{center}
-\begin{tikzpicture}[
-    node distance=2.8cm and 3.2cm,
-    table/.style={rectangle,draw=black,line width=1pt,minimum width=3.6cm,font=\small},
-    pk/.style={font=\small\ttfamily},
-    fk/.style={font=\small\ttfamily,text=black!60},
-    rel/.style={font=\footnotesize,midway,fill=white,inner sep=1pt},
-    >=stealth
-  ]
-  \node[table] (users) at (0,0) {%
-    \begin{tabular}{l}
-      \textbf{users} \\ \hline
-      \pk{user\_id} (PK) \\
-      \texttt{username} (UQ) \\
-      \texttt{password\_hash} \\
-      \texttt{real\_name} \\
-      \texttt{email} \\
-      \texttt{role} \\
-      \texttt{status} \\
-    \end{tabular}
-  };
-  \node[table,right=5cm of users] (classes) {%
-    \begin{tabular}{l}
-      \textbf{classes} \\ \hline
-      \pk{class\_id} (PK) \\
-      \texttt{class\_name} \\
-      \fk{teacher\_id} (FK) \\
-      \texttt{semester} \\
-      \texttt{invite\_code} (UQ) \\
-    \end{tabular}
-  };
-  \node[table,below=2cm of users] (questions) {%
-    \begin{tabular}{l}
-      \textbf{questions} \\ \hline
-      \pk{question\_id} (PK) \\
-      \texttt{title} \\
-      \texttt{description} \\
-      \texttt{difficulty} \\
-      \texttt{answer\_sql} \\
-      \fk{creator\_id} (FK) \\
-      \texttt{source\_schema\_sql} \\
-      \texttt{tags} (JSON) \\
-      \texttt{visible} \\
-    \end{tabular}
-  };
-  \node[table,right=5cm of questions] (test_cases) {%
-    \begin{tabular}{l}
-      \textbf{test\_cases} \\ \hline
-      \pk{case\_id} (PK) \\
-      \fk{question\_id} (FK) \\
-      \texttt{input\_sql} \\
-      \texttt{expected\_output} \\
-      \texttt{case\_order} \\
-      \texttt{is\_hidden} \\
-    \end{tabular}
-  };
-  \node[table,right=5cm of classes] (exams) {%
-    \begin{tabular}{l}
-      \textbf{exams} \\ \hline
-      \pk{exam\_id} (PK) \\
-      \texttt{exam\_name} \\
-      \texttt{start\_time} \\
-      \texttt{end\_time} \\
-      \texttt{duration} \\
-      \texttt{lockdown} \\
-      \texttt{status} \\
-      \fk{creator\_id} (FK) \\
-    \end{tabular}
-  };
-  \node[table,below=2cm of questions] (submissions) {%
-    \begin{tabular}{l}
-      \textbf{submissions} \\ \hline
-      \pk{submission\_id} (PK) \\
-      \fk{user\_id} (FK) \\
-      \fk{question\_id} (FK) \\
-      \fk{exam\_id} (FK, NULL) \\
-      \texttt{sql\_code} \\
-      \texttt{status} \\
-      \texttt{score} \\
-      \texttt{runtime\_ms} \\
-      \texttt{result\_preview} \\
-    \end{tabular}
-  };
-  \node[table,below=1.5cm of classes] (student_class) {%
-    \begin{tabular}{l}
-      \textbf{student\_class} \\ \hline
-      \fk{student\_id} (PK, FK) \\
-      \fk{class\_id} (PK, FK) \\
-      \texttt{status} \\
-      \texttt{joined\_at} \\
-    \end{tabular}
-  };
-  \node[table,below=1.5cm of exams] (exam_questions) {%
-    \begin{tabular}{l}
-      \textbf{exam\_questions} \\ \hline
-      \fk{exam\_id} (PK, FK) \\
-      \fk{question\_id} (PK, FK) \\
-      \texttt{score} \\
-      \texttt{question\_order} \\
-    \end{tabular}
-  };
-  \node[table,below=1.2cm of exam_questions] (exam_students) {%
-    \begin{tabular}{l}
-      \textbf{exam\_students} \\ \hline
-      \fk{exam\_id} (PK, FK) \\
-      \fk{student\_id} (PK, FK) \\
-      \texttt{final\_score} \\
-      \texttt{status} \\
-      \texttt{started\_at} \\
-      \texttt{submitted\_at} \\
-    \end{tabular}
-  };
-
-  % Relations
-  \draw[->] (users.east) -- ++(0.5,0) |- node[rel] {1} (classes.175);
-  \draw[->] (users.south) -- ++(0,-0.3) -| node[rel] {1} (questions.10);
-  \draw[->] (users.50) |- node[rel] {1} (exams.170);
-  \draw[->] (users.340) |- node[rel] {1} (submissions.160);
-  \draw[->] (classes.south) -- (student_class.north) node[rel] {1};
-  \draw[->] (student_class.west) -| node[rel] {N} (users.310);
-  \draw[->] (questions.east) -- node[rel] {1} (test_cases.west);
-  \draw[->] (questions.0) -- node[rel] {1} (submissions.200);
-  \draw[->] (exams.south) -- (exam_questions.north) node[rel] {1};
-  \draw[->] (exam_questions.west) -| ++(-1.2,0) |- node[rel] {N} (questions.25);
-  \draw[->] (exams.355) |- node[rel] {1} (exam_students.170);
-  \draw[->] (exam_students.west) -| ++(-2.5,0) |- node[rel] {N} (users.330);
-  \draw[->,dashed] (exams.5) |- node[rel] {0..N} (submissions.20);
-\end{tikzpicture}
-\end{center}
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{ER图.png}
+\caption{数据库 E-R 图}
+\label{fig:er}
+\end{figure}
 
 \subsection{物理模型（DDL）}
 
