@@ -120,23 +120,24 @@ public class JudgeService {
 
     private JudgeCaseResult executeCase(String schema, TestCaseRecord testCase, String studentSql) {
         String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
-        String schemaUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=false&allowPublicKeyRetrieval=true";
+        String initUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        String runUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=false&allowPublicKeyRetrieval=true";
         try (Connection admin = DriverManager.getConnection(adminUrl, username, password)) {
             try (java.sql.Statement stmt = admin.createStatement()) {
                 stmt.execute("CREATE DATABASE IF NOT EXISTS " + schema);
             }
-            try (Connection conn = DriverManager.getConnection(schemaUrl, username, password)) {
-                try (java.sql.Statement init = conn.createStatement()) {
-                    init.execute(testCase.getInputSql());
-                }
-                try (java.sql.Statement run = conn.createStatement()) {
-                    run.setQueryTimeout(timeoutSeconds);
-                    try (ResultSet rs = run.executeQuery(studentSql)) {
-                        Map<String, Object> actual = readResult(rs);
-                        Map<String, Object> expected = readJson(testCase.getExpectedOutput());
-                        boolean passed = compare(actual, expected);
-                        return new JudgeCaseResult(passed ? "AC" : "WA", passed, passed ? "通过" : "结果不匹配", actual);
-                    }
+            try (Connection initConn = DriverManager.getConnection(initUrl, username, password);
+                 java.sql.Statement init = initConn.createStatement()) {
+                init.execute(testCase.getInputSql());
+            }
+            try (Connection runConn = DriverManager.getConnection(runUrl, username, password);
+                 java.sql.Statement run = runConn.createStatement()) {
+                run.setQueryTimeout(timeoutSeconds);
+                try (ResultSet rs = run.executeQuery(studentSql)) {
+                    Map<String, Object> actual = readResult(rs);
+                    Map<String, Object> expected = readJson(testCase.getExpectedOutput());
+                    boolean passed = compare(actual, expected);
+                    return new JudgeCaseResult(passed ? "AC" : "WA", passed, passed ? "通过" : "结果不匹配", actual);
                 }
             }
         } catch (java.sql.SQLTimeoutException ex) {
