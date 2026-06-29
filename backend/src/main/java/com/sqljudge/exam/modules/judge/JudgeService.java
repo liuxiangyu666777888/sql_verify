@@ -15,6 +15,10 @@ import net.sf.jsqlparser.statement.select.Select;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,9 +32,16 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class JudgeService {
+    private static final Logger log = LoggerFactory.getLogger(JudgeService.class);
+
+    private static final Pattern DANGEROUS_KEYWORDS =
+            Pattern.compile("\\b(insert|update|delete|drop|alter|create|truncate|grant|revoke)\\b",
+                    Pattern.CASE_INSENSITIVE);
+
     private final QuestionMapper questionMapper;
     private final TestCaseMapper testCaseMapper;
     private final ObjectMapper objectMapper;
@@ -49,6 +60,9 @@ public class JudgeService {
 
     @Value("${app.judge.timeout-seconds}")
     private int timeoutSeconds;
+
+    @Value("${app.judge.max-rows}")
+    private int maxRows;
 
     public JudgeService(QuestionMapper questionMapper, TestCaseMapper testCaseMapper, ObjectMapper objectMapper) {
         this.questionMapper = questionMapper;
@@ -106,7 +120,7 @@ public class JudgeService {
 
     private JudgeCaseResult executeCase(String schema, TestCaseRecord testCase, String studentSql) {
         String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
-        String schemaUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        String schemaUrl = "jdbc:mysql://" + host + ":" + port + "/" + schema + "?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=false&allowPublicKeyRetrieval=true";
         try (Connection admin = DriverManager.getConnection(adminUrl, username, password)) {
             try (java.sql.Statement stmt = admin.createStatement()) {
                 stmt.execute("CREATE DATABASE IF NOT EXISTS " + schema);
@@ -133,12 +147,33 @@ public class JudgeService {
         }
     }
 
+    @PostConstruct
+    private void cleanOrphanedSchemas() {
+        String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
+        try (Connection admin = DriverManager.getConnection(adminUrl, username, password);
+             java.sql.Statement stmt = admin.createStatement()) {
+            ResultSet rs = stmt.executeQuery("SHOW DATABASES LIKE 'judge_%'");
+            while (rs.next()) {
+                String db = rs.getString(1);
+                try {
+                    stmt.execute("DROP DATABASE IF EXISTS " + db);
+                    log.info("清理孤儿 schema: {}", db);
+                } catch (Exception e) {
+                    log.warn("清理孤儿 schema 失败: {}", db, e);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("启动时扫描孤儿 schema 失败", e);
+        }
+    }
+
     private void dropSchema(String schema) {
         String adminUrl = "jdbc:mysql://" + host + ":" + port + "/?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowMultiQueries=true&allowPublicKeyRetrieval=true";
         try (Connection admin = DriverManager.getConnection(adminUrl, username, password);
              java.sql.Statement stmt = admin.createStatement()) {
             stmt.execute("DROP DATABASE IF EXISTS " + schema);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("删除临时 schema 失败: {}", schema, e);
         }
     }
 
@@ -149,7 +184,7 @@ public class JudgeService {
             columns.add(meta.getColumnLabel(i));
         }
         List<List<Object>> rows = new ArrayList<>();
-        while (rs.next()) {
+        while (rs.next() && rows.size() < maxRows) {
             List<Object> row = new ArrayList<>();
             for (int i = 1; i <= meta.getColumnCount(); i++) {
                 Object value = rs.getObject(i);
@@ -244,13 +279,10 @@ public class JudgeService {
         if (sql == null || sql.trim().isEmpty()) {
             throw BusinessException.badRequest("SQL不能为空");
         }
-        String lower = sql.toLowerCase();
-        if (lower.contains(";") && lower.trim().indexOf(";") != lower.trim().lastIndexOf(";")) {
+        if (sql.trim().indexOf(';') != sql.trim().lastIndexOf(';')) {
             throw BusinessException.forbidden("不允许多语句提交");
         }
-        if (lower.contains("insert ") || lower.contains("update ") || lower.contains("delete ")
-                || lower.contains("drop ") || lower.contains("alter ") || lower.contains("create ")
-                || lower.contains("truncate ") || lower.contains("grant ") || lower.contains("revoke ")) {
+        if (DANGEROUS_KEYWORDS.matcher(sql).find()) {
             throw BusinessException.forbidden("只允许查询类SQL");
         }
         try {

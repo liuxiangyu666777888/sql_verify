@@ -103,7 +103,10 @@ public class ExamService {
     }
 
     public void addQuestions(Long examId, List<Map<String, Object>> questions) {
-        detail(examId);
+        ExamRecord exam = detail(examId);
+        if (!"DRAFT".equals(exam.getStatus())) {
+            throw BusinessException.badRequest("只能为草稿状态的考试添加题目");
+        }
         if (questions == null || questions.isEmpty()) {
             throw BusinessException.badRequest("请至少选择一道题");
         }
@@ -140,7 +143,10 @@ public class ExamService {
     }
 
     public void addStudents(Long examId, List<Long> studentIds) {
-        detail(examId);
+        ExamRecord exam = detail(examId);
+        if (!"DRAFT".equals(exam.getStatus())) {
+            throw BusinessException.badRequest("只能为草稿状态的考试添加学生");
+        }
         if (studentIds == null || studentIds.isEmpty()) {
             throw BusinessException.badRequest("请至少选择一名学生");
         }

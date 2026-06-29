@@ -1,5 +1,6 @@
 package com.sqljudge.exam.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,6 +26,9 @@ import java.util.Arrays;
 public class SecurityConfig {
     private final JwtTokenProvider tokenProvider;
     private final SqlUserDetailsService userDetailsService;
+
+    @Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
 
     public SecurityConfig(JwtTokenProvider tokenProvider, SqlUserDetailsService userDetailsService) {
         this.tokenProvider = tokenProvider;
@@ -71,7 +75,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
+        config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
