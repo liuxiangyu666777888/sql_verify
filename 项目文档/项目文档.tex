@@ -347,6 +347,7 @@ CREATE TABLE submissions (
   \item SQL 提交前做语法级检查：关键字黑名单 → 分号计数 → JSqlParser AST 解析。
   \item 单次查询结果行数受配置约束（\texttt{max-rows}），防止超大结果集拖垮服务。
   \item 判题失败也必须清理临时 Schema，清理逻辑放在 \texttt{finally} 块中保证执行。
+  \item 系统启动时自动扫描并清理残留的孤儿 \texttt{judge\_\%} Schema，防止 JVM 异常退出导致临时库堆积。
   \item 测试用例的初始化 SQL 只能由教师创建，学生不可编辑。
 \end{enumerate}
 
@@ -403,10 +404,10 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，支持难度筛选，服务端分页。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
 
 \item[judge 模块（8 文件 / 453 行）]
-系统核心。\texttt{JudgeService}（269 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。\texttt{SubmissionService}：提交记录管理、历史查询、考试成绩触发重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
+系统核心。\texttt{JudgeService}（269 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立低权限连接（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册，通过后触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
 
 \item[exam 模块（6 文件 / 406 行）]
-考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}（214 行）：发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
+考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}（214 行）：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
 
 \item[classes 模块（5 文件 / 154 行）]
 班级 CRUD。教师创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师调用加入接口返回 403。
