@@ -389,7 +389,7 @@ SQL 输入 & \texttt{<textarea>} & 原生文本输入 \\
 \begin{description}[leftmargin=2em,style=nextline]
 
 \item[common 包（5 文件 / 169 行）]
-统一响应封装（\texttt{ApiResponse}）、自定义业务异常（\texttt{BusinessException}，错误码 40000--51000）、全局异常处理（\texttt{GlobalExceptionHandler}）、当前用户工具类（\texttt{CurrentUser}）、分页响应（\texttt{PageResponse}）。
+统一响应封装（\texttt{ApiResponse}）、自定义业务异常（\texttt{BusinessException}，错误码 40000--40400）、全局异常处理（\texttt{GlobalExceptionHandler}）、当前用户工具类（\texttt{CurrentUser}）、分页响应（\texttt{PageResponse}）。
 
 \item[security 包（5 文件 / 264 行）]
 Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、启用 CORS、放行登录注册接口、其余接口需 JWT 认证。JWT 生成与解析（\texttt{JwtTokenProvider}）：HMAC-SHA256 签名，包含 userId 和 role。JWT 过滤器（\texttt{JwtAuthenticationFilter}）：从 Authorization Header 提取 Bearer Token，注入 SecurityContext。用户详情服务（\texttt{SqlUserDetailsService}）和 UserPrincipal 实现 UserDetails 接口。
@@ -404,10 +404,10 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，支持难度筛选，服务端分页。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
 
 \item[judge 模块（8 文件 / 453 行）]
-系统核心。\texttt{JudgeService}（269 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立低权限连接（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册，通过后触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
+系统核心。\texttt{JudgeService}（302 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立低权限连接（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册，通过后触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
 
 \item[exam 模块（6 文件 / 406 行）]
-考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}（214 行）：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
+考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}（221 行）：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
 
 \item[classes 模块（5 文件 / 154 行）]
 班级 CRUD。教师创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师调用加入接口返回 403。
@@ -482,7 +482,7 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 
 \subsubsection*{判题引擎核心实现}
 
-\texttt{JudgeService.java}（269 行）是系统最核心的文件，关键实现如下：
+\texttt{JudgeService.java}（302 行）是系统最核心的文件，关键实现如下：
 
 \textbf{安全检查（extractSelectBody 方法）：} 调用 JSqlParser 解析 SQL → 获取 \texttt{PlainSelect} 对象。若解析失败（语法错误）→ 返回 null，由外层判定为 ERROR。若解析成功但根节点不是 \texttt{PlainSelect}（如 \texttt{SetOperationList}）→ 返回 null，判定为 FORBIDDEN。
 
