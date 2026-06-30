@@ -152,12 +152,28 @@ async function load() {
 load()
 
 async function run() {
-  const { data } = await http.post('/judge/run', { questionId: Number(route.params.id), sqlCode: sql.value })
-  result.value = data.data
+  try {
+    const { data } = await http.post('/judge/run', { questionId: Number(route.params.id), sqlCode: sql.value })
+    result.value = data.data
+  } catch (err: any) {
+    result.value = {
+      status: err?.response?.status === 403 ? 'FORBIDDEN' : 'ERROR',
+      score: 0,
+      errorMessage: err?.response?.data?.message || err?.message || '请求失败',
+    }
+  }
 }
 
 async function submit() {
-  const { data } = await http.post('/submissions', { questionId: Number(route.params.id), sqlCode: sql.value })
-  result.value = data.data
+  try {
+    const { data } = await http.post('/submissions', { questionId: Number(route.params.id), sqlCode: sql.value })
+    result.value = data.data
+  } catch (err: any) {
+    result.value = {
+      status: err?.response?.status === 403 ? 'FORBIDDEN' : 'ERROR',
+      score: 0,
+      errorMessage: err?.response?.data?.message || err?.message || '请求失败',
+    }
+  }
 }
 </script>

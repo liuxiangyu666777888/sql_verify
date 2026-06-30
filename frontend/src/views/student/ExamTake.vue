@@ -176,14 +176,30 @@ function selectQuestion(index: number) {
 async function run() {
   const questionId = currentQuestionId.value
   if (!questionId) return
-  const { data } = await http.post('/judge/run', { questionId, examId, sqlCode: sql.value })
-  results.value[questionId] = data.data
+  try {
+    const { data } = await http.post('/judge/run', { questionId, examId, sqlCode: sql.value })
+    results.value[questionId] = data.data
+  } catch (err: any) {
+    results.value[questionId] = {
+      status: err?.response?.status === 403 ? 'FORBIDDEN' : 'ERROR',
+      score: 0,
+      errorMessage: err?.response?.data?.message || err?.message || '请求失败',
+    }
+  }
 }
 
 async function submit() {
   const questionId = currentQuestionId.value
   if (!questionId) return
-  const { data } = await http.post('/submissions', { questionId, examId, sqlCode: sql.value })
-  results.value[questionId] = data.data
+  try {
+    const { data } = await http.post('/submissions', { questionId, examId, sqlCode: sql.value })
+    results.value[questionId] = data.data
+  } catch (err: any) {
+    results.value[questionId] = {
+      status: err?.response?.status === 403 ? 'FORBIDDEN' : 'ERROR',
+      score: 0,
+      errorMessage: err?.response?.data?.message || err?.message || '请求失败',
+    }
+  }
 }
 </script>
