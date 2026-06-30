@@ -7,6 +7,16 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        headers: {
+          Origin: 'http://localhost:5173',
+        },
+      },
+    },
   },
   optimizeDeps: {
     noDiscovery: true,

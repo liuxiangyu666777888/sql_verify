@@ -28,7 +28,7 @@ export DB_PASSWORD="${DB_PASSWORD:-password}"
 export SERVER_PORT="${SERVER_PORT:-8080}"
 export FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 export JWT_SECRET="${JWT_SECRET:-local-dev-secret-change-me-local-dev-secret}"
-export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://localhost:${SERVER_PORT}/api}"
+export VITE_API_BASE_URL="${VITE_API_BASE_URL:-/api}"
 export CORS_ALLOWED_ORIGINS="${CORS_ALLOWED_ORIGINS:-http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}}"
 
 RED='\033[0;31m'
@@ -120,9 +120,53 @@ stop_pid_file() {
   fi
 }
 
+stop_matching_processes() {
+  local name="$1"
+  shift
+
+  local pattern pid
+  for pattern in "$@"; do
+    while IFS= read -r pid; do
+      [ -n "$pid" ] || continue
+      if is_alive "$pid"; then
+        log "停止遗留${name}进程 PID $pid"
+        kill_tree "$pid"
+        sleep 1
+        if is_alive "$pid"; then
+          warn "遗留${name}进程仍在运行，强制终止 PID $pid"
+          kill -9 "$pid" >/dev/null 2>&1 || true
+        fi
+      fi
+    done < <(pgrep -f "$pattern" 2>/dev/null || true)
+  done
+}
+
+stop_port_processes() {
+  local name="$1"
+  local port="$2"
+  local pid
+
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    if is_alive "$pid"; then
+      warn "${name}端口 $port 仍被 PID $pid 占用，正在停止"
+      kill_tree "$pid"
+      sleep 1
+      if is_alive "$pid"; then
+        warn "${name}端口占用进程仍在运行，强制终止 PID $pid"
+        kill -9 "$pid" >/dev/null 2>&1 || true
+      fi
+    fi
+  done < <(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+}
+
 stop_managed_services() {
   stop_pid_file "后端" "$PID_DIR/backend.pid"
   stop_pid_file "前端" "$PID_DIR/frontend.pid"
+  stop_matching_processes "后端" "$PID_DIR/backend-run.jar" "$BACKEND_DIR/target/exam-0.0.1-SNAPSHOT.jar"
+  stop_matching_processes "前端" "$FRONTEND_DIR/node_modules/.bin/vite --host 127.0.0.1 --port $FRONTEND_PORT"
+  stop_port_processes "后端" "$SERVER_PORT"
+  stop_port_processes "前端" "$FRONTEND_PORT"
   rm -f "$PID_DIR/backend.log" "$PID_DIR/frontend.log" "$PID_DIR/mysql-check.log"
   rm -f "$PID_DIR/backend-build.log" "$PID_DIR/frontend.log" "$PID_DIR/vite-check.log" "$PID_DIR/start.out" "$PID_DIR/start-debug.out" "$PID_DIR/start-bg-debug.out"
 }
@@ -460,12 +504,9 @@ case "${1:-}" in
     exit 0
     ;;
   --stop)
-    if [ -d "$PID_DIR" ]; then
-      stop_managed_services
-      log "已停止由 start.sh 管理的服务"
-    else
-      log "没有发现正在运行的服务"
-    fi
+    mkdir -p "$PID_DIR"
+    stop_managed_services
+    log "已停止由 start.sh 管理的服务"
     exit 0
     ;;
   --setup)

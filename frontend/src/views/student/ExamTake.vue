@@ -110,13 +110,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../../components/AppLayout.vue'
 import http from '../../api/http'
 
 const route = useRoute()
 const examId = Number(route.params.id)
+const draftKey = `exam-drafts:${examId}`
 const questions = ref<any[]>([])
 const activeIndex = ref(0)
 const sqlDrafts = ref<Record<number, string>>({})
@@ -162,11 +163,28 @@ const statusClass = computed(() => {
 onMounted(async () => {
   const { data } = await http.get(`/exams/${examId}/questions`)
   questions.value = data.data || []
+  const storedDrafts = loadDrafts()
   for (const question of questions.value) {
-    sqlDrafts.value[question.questionId] = defaultSql
+    sqlDrafts.value[question.questionId] = storedDrafts[question.questionId] ?? defaultSql
     results.value[question.questionId] = { ...defaultResult }
   }
 })
+
+watch(
+  sqlDrafts,
+  (drafts) => {
+    localStorage.setItem(draftKey, JSON.stringify(drafts))
+  },
+  { deep: true },
+)
+
+function loadDrafts() {
+  try {
+    return JSON.parse(localStorage.getItem(draftKey) || '{}') as Record<number, string>
+  } catch {
+    return {}
+  }
+}
 
 function selectQuestion(index: number) {
   if (index < 0 || index >= questions.value.length) return

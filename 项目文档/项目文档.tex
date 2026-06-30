@@ -1,5 +1,5 @@
 \documentclass[12pt,a4paper]{ctexart}
-\setCJKmainfont{Microsoft YaHei}
+\setCJKmainfont{Heiti SC}
 \usepackage[margin=2.2cm]{geometry}
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -41,7 +41,7 @@
 
 \subsection{用户角色}
 
-系统定义四类用户角色，采用最小权限原则：
+系统定义三类用户角色，采用最小权限原则：
 
 \begin{description}[leftmargin=2em]
   \item[学生（STUDENT）] 浏览题库、编写 SQL 练习、参加在线考试、查看个人提交记录和成绩。
@@ -55,7 +55,7 @@
   \item \textbf{用户认证}：注册、登录、JWT 鉴权、密码修改。注册接口已锁定，新用户由管理员创建。
   \item \textbf{题库管理}：教师创建/编辑/删除题目，支持 Markdown 题面、表结构展示、难度分级、标签分类。学生浏览和搜索题目。
   \item \textbf{SQL 判题}：学生在浏览器端编写 SQL，支持运行自测和正式提交。系统自动执行判题，返回 AC/WA/ERROR/TLE/FORBIDDEN 状态。
-  \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答。支持多题导航、独立草稿。
+  \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答，后端限制开始前和结束后的考试提交。作答页支持多题导航，每道题草稿保存在浏览器本地，刷新后可恢复。
   \item \textbf{班级管理}：教师创建班级并生成邀请码，学生通过邀请码加入班级。
   \item \textbf{成绩统计}：教师查看考试成绩排名、平均分、最高分。成绩由服务端自动汇总每题最高分，不可前端篡改。
   \item \textbf{用户管理}：管理员创建/编辑用户，调整角色和账号状态。
@@ -90,7 +90,7 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL,
   real_name     VARCHAR(64),
   email         VARCHAR(128),
-  role          ENUM('STUDENT','TEACHER','ADMIN','ASSISTANT') NOT NULL,
+  role          ENUM('STUDENT','TEACHER','ADMIN') NOT NULL,
   status        ENUM('ACTIVE','DISABLED') NOT NULL DEFAULT 'ACTIVE',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -342,7 +342,7 @@ CREATE TABLE submissions (
 \begin{enumerate}[leftmargin=2em]
   \item 判题 MySQL 用户仅拥有临时 Schema 下的权限，不拥有业务库 \texttt{sql\_exam} 的任何权限。
   \item 每次执行使用独立 JDBC 连接，设置语句超时。
-  \item 创建 Schema 和初始化表结构使用管理员连接（需 \texttt{allowMultiQueries}），执行学生 SQL 使用独立低权限连接。
+  \item 创建 Schema 和初始化表结构使用管理员连接（需 \texttt{allowMultiQueries}），执行学生 SQL 使用独立连接并关闭多语句；部署者可通过 \texttt{JUDGE\_DB\_*} 配置专用低权限账号。
   \item SQL 提交前做语法级检查：关键字黑名单 → 分号计数 → JSqlParser AST 解析。
   \item 单次查询结果行数受配置约束（\texttt{max-rows}），防止超大结果集拖垮服务。
   \item 判题失败也必须清理临时 Schema，清理逻辑放在 \texttt{finally} 块中保证执行。
@@ -403,10 +403,10 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，服务端分页。题目展示难度标签，但未实现按难度筛选。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
 
 \item[judge 模块（8 文件 / 453 行）]
-系统核心。\texttt{JudgeService}（302 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立低权限连接（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册，通过后触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
+系统核心。\texttt{JudgeService}：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立连接并关闭多语句（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册、题目属于考试、提交时间位于考试窗口内，通过后再执行判题、写入提交记录并触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
 
 \item[exam 模块（6 文件 / 406 行）]
-考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}（221 行）：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
+考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
 
 \item[classes 模块（5 文件 / 154 行）]
 班级 CRUD。教师创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师调用加入接口返回 403。
@@ -428,14 +428,13 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 \begin{itemize}
   \item \texttt{api/http.ts}：Axios 实例封装，请求拦截器自动添加 JWT Bearer Token，响应拦截器拦截 401 自动跳转登录页。
   \item \texttt{stores/auth.ts}：Pinia Auth Store，管理 token 和 user 状态。\texttt{login()} 调接口存 token 到 localStorage，\texttt{fetchMe()} 获取当前用户信息，\texttt{logout()} 清除状态跳转登录页，页面刷新时从 localStorage 恢复登录态。
-  \item \texttt{router/index.ts}：14 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师路由（/teacher/*）、管理员路由（/admin/*）。路由守卫检查 Pinia auth store 的角色字段，学生访问教师路由自动重定向到学生仪表盘，反之同理。未登录访问任何受保护路由都重定向 /login。
+  \item \texttt{router/index.ts}：14 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师路由（/teacher/*）、管理员路由（/admin/*）。路由守卫在需要时调用 \texttt{/auth/me} 校验后端登录态和角色，学生访问教师路由自动重定向到学生仪表盘，管理员路由仅 ADMIN 可访问。未登录或 token 失效访问受保护路由都会重定向 /login。
 \end{itemize}
 
-\subsubsection*{组件（9 个）}
+\subsubsection*{组件（8 个）}
 
 \begin{itemize}
   \item \texttt{AppLayout.vue}（223 行）：全局布局，包含侧边导航栏（按角色动态渲染菜单）、顶部搜索栏（回车跳转题库搜索）、设置面板（修改密码弹窗）。
-  \item \texttt{SqlEditor.vue}（57 行）：SQL 编辑器组件封装，\texttt{v-model} 双向绑定 SQL 代码。
   \item \texttt{StatCard.vue}（29 行）：仪表盘统计卡片，展示图标、标签、数值、副标题。
   \item \texttt{ProgressRing.vue}（42 行）：环形进度条组件，用于展示正确率等百分比指标。
   \item \texttt{BarChart.vue}（30 行）：柱状图组件，用于教师端统计展示。
@@ -481,13 +480,13 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 
 \subsubsection*{判题引擎核心实现}
 
-\texttt{JudgeService.java}（302 行）是系统最核心的文件，关键实现如下：
+\texttt{JudgeService.java} 是系统最核心的文件，关键实现如下：
 
-\textbf{安全检查（extractSelectBody 方法）：} 调用 JSqlParser 解析 SQL → 获取 \texttt{PlainSelect} 对象。若解析失败（语法错误）→ 返回 null，由外层判定为 ERROR。若解析成功但根节点不是 \texttt{PlainSelect}（如 \texttt{SetOperationList}）→ 返回 null，判定为 FORBIDDEN。
+\textbf{安全检查（validateSql 方法）：} 调用 JSqlParser 解析 SQL，要求提交内容非空、不是多语句、不包含写入或 DDL 关键字，并且根节点必须是单个 \texttt{SELECT} 查询。语法错误返回 BAD REQUEST，非查询类语句返回 FORBIDDEN。
 
-\textbf{临时 Schema 执行（judge 方法）：} 创建 JDBC 连接 → \texttt{CREATE DATABASE judge\_xxx} → \texttt{USE judge\_xxx} → 执行测试用例 \texttt{input\_sql}（CREATE TABLE + INSERT）→ 设置 \texttt{setQueryTimeout} → 执行学生 SQL → 读取 \texttt{ResultSet} → 转为规范化 JSON → 与 \texttt{expected\_output} 比对 → 在 \texttt{finally} 块中 \texttt{DROP DATABASE judge\_xxx}。
+\textbf{临时 Schema 执行（run / executeCase 方法）：} 创建 JDBC 连接 → \texttt{CREATE DATABASE judge\_xxx} → 执行测试用例 \texttt{input\_sql}（CREATE TABLE + INSERT）→ 设置 \texttt{setQueryTimeout} → 执行学生 SQL → 读取 \texttt{ResultSet} → 转为规范化 JSON → 与 \texttt{expected\_output} 比对 → 在 \texttt{finally} 块中 \texttt{DROP DATABASE judge\_xxx}。
 
-\textbf{结果比对（compareResults 方法）：} 逐一检查列名、列数、行数。根据 \texttt{orderSensitive} 决定是否排序后比较。NULL 值特殊处理，数字类型用 \texttt{BigDecimal} 比较。
+\textbf{结果比对（compare 方法）：} 逐一检查列名、行数和单元格值。根据 \texttt{orderSensitive} 决定是否排序后比较。NULL 值特殊处理，数字类型会做规范化后比较。
 
 \subsubsection*{考试成绩重算}
 

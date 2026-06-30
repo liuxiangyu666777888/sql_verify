@@ -38,12 +38,20 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
   auth.restore()
   const token = localStorage.getItem('token')
   if (to.path !== '/login' && !token) {
     return '/login'
+  }
+  if (to.path !== '/login' && token && (!auth.user || auth.user.userId === 0)) {
+    try {
+      await auth.fetchMe()
+    } catch {
+      auth.logout()
+      return '/login'
+    }
   }
   if (to.path.startsWith('/teacher') && auth.user?.role && !['TEACHER', 'ADMIN'].includes(auth.user.role)) {
     return '/student/dashboard'
