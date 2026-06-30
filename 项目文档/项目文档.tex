@@ -55,7 +55,7 @@
   \item \textbf{用户认证}：注册、登录、JWT 鉴权、密码修改。注册接口已锁定，新用户由管理员创建。
   \item \textbf{题库管理}：教师创建/编辑/删除题目，支持 Markdown 题面、表结构展示、难度分级、标签分类。学生浏览和搜索题目。
   \item \textbf{SQL 判题}：学生在浏览器端编写 SQL，支持运行自测和正式提交。系统自动执行判题，返回 AC/WA/ERROR/TLE/FORBIDDEN 状态。
-  \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答。支持多题导航、独立草稿、自动交卷。
+  \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答。支持多题导航、独立草稿。
   \item \textbf{班级管理}：教师创建班级并生成邀请码，学生通过邀请码加入班级。
   \item \textbf{成绩统计}：教师查看考试成绩排名、平均分、最高分。成绩由服务端自动汇总每题最高分，不可前端篡改。
   \item \textbf{用户管理}：管理员创建/编辑用户，调整角色和账号状态。
@@ -266,7 +266,7 @@ CREATE TABLE submissions (
 \subsection{关键设计说明}
 
 \begin{enumerate}[leftmargin=2em]
-  \item \texttt{questions.description} 使用 Markdown 格式存储题面，前端渲染为安全 HTML。
+  \item \texttt{questions.description} 使用 Markdown 格式存储题面，前端以纯文本展示。
   \item \texttt{test\_cases.expected\_output} 使用 JSON 格式存储期望结果，结构为 \texttt{\{"columns":[], "rows":[[]], "orderSensitive": false\}}。数字类型做规范化比较（\texttt{1} 与 \texttt{1.0} 视为相等），NULL 严格匹配。
   \item \texttt{submissions.exam\_id} 可为 NULL。为 NULL 表示日常练习，不为 NULL 表示考试提交。
   \item 题目采用软删除（\texttt{visible = 0}）而非物理删除，保留历史提交记录的外键关联。
@@ -315,7 +315,7 @@ CREATE TABLE submissions (
   \begin{enumerate}
     \item 创建临时 MySQL Schema，命名格式为 \texttt{judge\_\{questionId\}\_\{timestamp\}\_\{uuid\}}。
     \item 执行测试用例的 \texttt{input\_sql} 初始化表和数据。
-    \item 使用低权限 MySQL 账号执行学生 SQL，设置 \texttt{setQueryTimeout} = 5 秒。
+    \item 执行学生 SQL（设置 \texttt{setQueryTimeout} = 5 秒），通过独立连接和临时 Schema 实现安全隔离。
     \item 读取结果集，转为规范化 JSON 格式。
     \item 与 \texttt{expected\_output} 逐项比对。
     \item 在 \texttt{finally} 块中删除临时 Schema。
@@ -400,7 +400,7 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 管理员专属。用户列表查询、创建用户（设置角色和初始密码）、编辑用户（修改角色和状态）。所有接口标注 \texttt{@PreAuthorize("hasRole('ADMIN')")}。
 
 \item[question 模块（9 文件 / 329 行）]
-题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，支持难度筛选，服务端分页。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
+题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，服务端分页。题目展示难度标签，但未实现按难度筛选。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
 
 \item[judge 模块（8 文件 / 453 行）]
 系统核心。\texttt{JudgeService}（302 行）：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立低权限连接（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册，通过后触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
