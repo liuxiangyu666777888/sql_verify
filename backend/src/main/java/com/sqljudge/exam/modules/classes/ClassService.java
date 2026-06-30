@@ -24,8 +24,8 @@ public class ClassService {
     }
 
     public ClassRecord create(ClassRequest request) {
-        if (!"TEACHER".equals(CurrentUser.role()) && !"ADMIN".equals(CurrentUser.role())) {
-            throw BusinessException.forbidden("只有教师或管理员可以创建班级");
+        if (!canUseTeacherWorkspace(CurrentUser.role())) {
+            throw BusinessException.forbidden("只有教师、助教或管理员可以创建班级");
         }
         if (request == null || request.getClassName() == null || request.getClassName().trim().isEmpty()) {
             throw BusinessException.badRequest("班级名称不能为空");
@@ -61,5 +61,9 @@ public class ClassService {
             }
         }
         throw new BusinessException(50000, "邀请码生成失败");
+    }
+
+    private boolean canUseTeacherWorkspace(String role) {
+        return "TEACHER".equals(role) || "ASSISTANT".equals(role) || "ADMIN".equals(role);
     }
 }

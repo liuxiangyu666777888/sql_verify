@@ -22,7 +22,7 @@ public class ClassController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<ClassRecord> create(@RequestBody ClassRequest request) {
         return ApiResponse.ok(classService.create(request));
     }

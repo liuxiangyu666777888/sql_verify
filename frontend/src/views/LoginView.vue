@@ -34,7 +34,7 @@ async function submit() {
   try {
     await auth.login(username.value, password.value)
     const role = auth.user?.role
-    router.push(['TEACHER', 'ADMIN'].includes(role || '') ? '/teacher/dashboard' : '/student/dashboard')
+    router.push(['TEACHER', 'ASSISTANT', 'ADMIN'].includes(role || '') ? '/teacher/dashboard' : '/student/dashboard')
   } catch (e: any) {
     error.value = e?.response?.data?.message || '登录失败'
   }

@@ -22,19 +22,19 @@ public class ExamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<ExamRecord> create(@RequestBody ExamRequest request) {
         return ApiResponse.ok(examService.create(request));
     }
 
     @PutMapping("/{examId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<ExamRecord> update(@PathVariable Long examId, @RequestBody ExamRequest request) {
         return ApiResponse.ok(examService.update(examId, request));
     }
 
     @DeleteMapping("/{examId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<String> delete(@PathVariable Long examId) {
         examService.delete(examId);
         return ApiResponse.ok("ok");
@@ -51,33 +51,33 @@ public class ExamController {
     }
 
     @GetMapping("/{examId}/scores")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<List<Map<String, Object>>> scores(@PathVariable Long examId) {
         return ApiResponse.ok(examService.scores(examId));
     }
 
     @GetMapping("/student-options")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<List<StudentOptionResponse>> studentOptions() {
         return ApiResponse.ok(examService.studentOptions());
     }
 
     @PostMapping("/{examId}/publish")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<String> publish(@PathVariable Long examId) {
         examService.publish(examId);
         return ApiResponse.ok("ok");
     }
 
     @PostMapping("/{examId}/questions")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<String> addQuestions(@PathVariable Long examId, @RequestBody List<Map<String, Object>> questions) {
         examService.addQuestions(examId, questions);
         return ApiResponse.ok("ok");
     }
 
     @PostMapping("/{examId}/students")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<String> addStudents(@PathVariable Long examId, @RequestBody List<Long> studentIds) {
         examService.addStudents(examId, studentIds);
         return ApiResponse.ok("ok");

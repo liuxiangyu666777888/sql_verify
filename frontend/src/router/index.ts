@@ -53,11 +53,11 @@ router.beforeEach(async (to) => {
       return '/login'
     }
   }
-  if (to.path.startsWith('/teacher') && auth.user?.role && !['TEACHER', 'ADMIN'].includes(auth.user.role)) {
+  if (to.path.startsWith('/teacher') && auth.user?.role && !['TEACHER', 'ASSISTANT', 'ADMIN'].includes(auth.user.role)) {
     return '/student/dashboard'
   }
   if (to.path.startsWith('/admin') && auth.user?.role && auth.user.role !== 'ADMIN') {
-    return auth.user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'
+    return ['TEACHER', 'ASSISTANT'].includes(auth.user.role) ? '/teacher/dashboard' : '/student/dashboard'
   }
   return true
 })

@@ -22,7 +22,7 @@ public class DashboardController {
     }
 
     @GetMapping("/api/teacher/dashboard")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<Map<String, Object>> teacher() {
         return ApiResponse.ok(dashboardService.teacher());
     }

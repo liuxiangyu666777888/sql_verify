@@ -209,7 +209,7 @@ public class ExamService {
         if ("ADMIN".equals(role)) {
             return;
         }
-        if ("TEACHER".equals(role) && CurrentUser.id().equals(record.getCreatorId())) {
+        if (("TEACHER".equals(role) || "ASSISTANT".equals(role)) && CurrentUser.id().equals(record.getCreatorId())) {
             return;
         }
         if ("STUDENT".equals(role) && examMapper.countExamStudent(record.getExamId(), CurrentUser.id()) > 0) {

@@ -137,6 +137,6 @@ public class QuestionService {
 
     private boolean canManageQuestions() {
         String role = CurrentUser.role();
-        return "TEACHER".equals(role) || "ADMIN".equals(role);
+        return "TEACHER".equals(role) || "ASSISTANT".equals(role) || "ADMIN".equals(role);
     }
 }

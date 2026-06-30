@@ -41,11 +41,12 @@
 
 \subsection{用户角色}
 
-系统定义三类用户角色，采用最小权限原则：
+系统定义四类用户角色，采用最小权限原则：
 
 \begin{description}[leftmargin=2em]
   \item[学生（STUDENT）] 浏览题库、编写 SQL 练习、参加在线考试、查看个人提交记录和成绩。
   \item[教师（TEACHER）] 创建和管理班级、维护题库和测试用例、创建和发布考试、查看学生提交和班级成绩统计。
+  \item[助教（ASSISTANT）] 复用教师端工作台和教师权限，用于协助教师维护题库、班级、考试和成绩统计；系统中通过角色名称区分助教身份。
   \item[管理员（ADMIN）] 用户增删改查、角色分配、账号状态管理、系统全局数据查看。
 \end{description}
 
@@ -53,13 +54,13 @@
 
 \begin{enumerate}[leftmargin=2em]
   \item \textbf{用户认证}：注册、登录、JWT 鉴权、密码修改。注册接口已锁定，新用户由管理员创建。
-  \item \textbf{题库管理}：教师创建/编辑/删除题目，支持 Markdown 题面、表结构展示、难度分级、标签分类。学生浏览和搜索题目。
+  \item \textbf{题库管理}：教师和助教创建/编辑/删除题目，支持 Markdown 题面、表结构展示、难度分级、标签分类。学生浏览和搜索题目。
   \item \textbf{SQL 判题}：学生在浏览器端编写 SQL，支持运行自测和正式提交。系统自动执行判题，返回 AC/WA/ERROR/TLE/FORBIDDEN 状态。
-  \item \textbf{在线考试}：教师通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答，后端限制开始前和结束后的考试提交。作答页支持多题导航，每道题草稿保存在浏览器本地，刷新后可恢复。
-  \item \textbf{班级管理}：教师创建班级并生成邀请码，学生通过邀请码加入班级。
-  \item \textbf{成绩统计}：教师查看考试成绩排名、平均分、最高分。成绩由服务端自动汇总每题最高分，不可前端篡改。
+  \item \textbf{在线考试}：教师和助教通过四步向导创建考试（配置参数 → 选题 → 设分值 → 分配学生），发布后学生在指定时间窗口内作答，后端限制开始前和结束后的考试提交。作答页支持多题导航，每道题草稿保存在浏览器本地，刷新后可恢复。
+  \item \textbf{班级管理}：教师和助教创建班级并生成邀请码，学生通过邀请码加入班级。
+  \item \textbf{成绩统计}：教师和助教查看考试成绩排名、平均分、最高分。成绩由服务端自动汇总每题最高分，不可前端篡改。
   \item \textbf{用户管理}：管理员创建/编辑用户，调整角色和账号状态。
-  \item \textbf{仪表盘}：学生端展示已解决题目数、正确率、连续练习天数、即将考试、可用题目列表。教师端展示班级数、题库量、待处理提交、最近考试。
+  \item \textbf{仪表盘}：学生端展示已解决题目数、正确率、连续练习天数、即将考试、可用题目列表。教师端展示班级数、题库量、待处理提交、最近考试；助教登录后进入同一教师端页面。
 \end{enumerate}
 
 % ===================================================================
@@ -90,7 +91,7 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL,
   real_name     VARCHAR(64),
   email         VARCHAR(128),
-  role          ENUM('STUDENT','TEACHER','ADMIN') NOT NULL,
+  role          ENUM('STUDENT','TEACHER','ASSISTANT','ADMIN') NOT NULL,
   status        ENUM('ACTIVE','DISABLED') NOT NULL DEFAULT 'ACTIVE',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -347,7 +348,7 @@ CREATE TABLE submissions (
   \item 单次查询结果行数受配置约束（\texttt{max-rows}），防止超大结果集拖垮服务。
   \item 判题失败也必须清理临时 Schema，清理逻辑放在 \texttt{finally} 块中保证执行。
   \item 系统启动时自动扫描并清理残留的孤儿 \texttt{judge\_\%} Schema，防止 JVM 异常退出导致临时库堆积。
-  \item 测试用例的初始化 SQL 只能由教师创建，学生不可编辑。
+  \item 测试用例的初始化 SQL 只能由教师或助教创建，学生不可编辑。
 \end{enumerate}
 
 % ===================================================================
@@ -400,7 +401,7 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 管理员专属。用户列表查询、创建用户（设置角色和初始密码）、编辑用户（修改角色和状态）。所有接口标注 \texttt{@PreAuthorize("hasRole('ADMIN')")}。
 
 \item[question 模块（9 文件 / 329 行）]
-题库完整 CRUD。创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，服务端分页。题目展示难度标签，但未实现按难度筛选。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
+题库完整 CRUD。教师、助教和管理员可创建/编辑/软删除题目（\texttt{visible = 0}）。搜索支持关键词同时匹配标题和描述，服务端分页。题目展示难度标签，但未实现按难度筛选。测试用例管理：增删改查，\texttt{expected\_output} 以 JSON 格式存储。权限控制：学生只看到 \texttt{visible = 1} 的题目，答案和测试用例字段在学生返回中为 null。
 
 \item[judge 模块（8 文件 / 453 行）]
 系统核心。\texttt{JudgeService}：三层安全检查 → 临时 Schema 创建 → 测试用例初始化 → 学生 SQL 执行 → 结果比对 → Schema 清理。管理员连接负责建库（\texttt{allowMultiQueries=true}），学生 SQL 走独立连接并关闭多语句（\texttt{allowMultiQueries=false}）。启动时自动清理残留的孤儿 \texttt{judge\_\%} Schema。\texttt{SubmissionService}：提交记录管理、历史查询。考试提交前验证考试存在性、PUBLISHED 状态、学生已注册、题目属于考试、提交时间位于考试窗口内，通过后再执行判题、写入提交记录并触发成绩重算。两个接口：\texttt{run}（自测不存记录）和 \texttt{submit}（正式提交存记录）。
@@ -409,10 +410,10 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 考试全生命周期管理。创建草稿 → 四步向导配置（参数/选题/分值/分配学生）→ 发布 → 学生作答 → 成绩汇总。\texttt{ExamService}：仅 DRAFT 状态可添加题目和学生，发布状态校验（已发布不可再次发布，已归档不可操作）、学生/题目存在性校验、重复添加检测。成绩重算：取每道题最高提交分，按 \texttt{exam\_questions.score} 上限汇总，写入 \texttt{exam\_students.final\_score}。
 
 \item[classes 模块（5 文件 / 154 行）]
-班级 CRUD。教师创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师调用加入接口返回 403。
+班级 CRUD。教师和助教创建班级时自动生成 8 位随机邀请码。学生通过邀请码加入班级，插入 \texttt{student\_class} 记录。教师、助教或管理员调用加入接口返回 403。
 
 \item[dashboard 模块（2 文件 / 116 行）]
-学生仪表盘：已解题目数（日常练习不同题目 AC 数）、正确率（总 AC / 总提交）、连续练习天数（AC 提交日期去重后倒推连续天数）、即将考试列表、可用题目列表。教师仪表盘：活跃班级数、题库总量、待处理提交（PENDING 状态）、最近考试列表。
+学生仪表盘：已解题目数（日常练习不同题目 AC 数）、正确率（总 AC / 总提交）、连续练习天数（AC 提交日期去重后倒推连续天数）、即将考试列表、可用题目列表。教师仪表盘：活跃班级数、题库总量、待处理提交（PENDING 状态）、最近考试列表。助教复用教师仪表盘。
 
 \item[user 模块（3 文件 / 90 行）]
 用户实体（\texttt{UserRecord}）、数据访问（\texttt{UserMapper}）、种子用户初始化（\texttt{SeedUserInitializer} —— 启动时检查并确保三个默认账号存在，密码使用 BCrypt 哈希）。
@@ -428,7 +429,7 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 \begin{itemize}
   \item \texttt{api/http.ts}：Axios 实例封装，请求拦截器自动添加 JWT Bearer Token，响应拦截器拦截 401 自动跳转登录页。
   \item \texttt{stores/auth.ts}：Pinia Auth Store，管理 token 和 user 状态。\texttt{login()} 调接口存 token 到 localStorage，\texttt{fetchMe()} 获取当前用户信息，\texttt{logout()} 清除状态跳转登录页，页面刷新时从 localStorage 恢复登录态。
-  \item \texttt{router/index.ts}：14 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师路由（/teacher/*）、管理员路由（/admin/*）。路由守卫在需要时调用 \texttt{/auth/me} 校验后端登录态和角色，学生访问教师路由自动重定向到学生仪表盘，管理员路由仅 ADMIN 可访问。未登录或 token 失效访问受保护路由都会重定向 /login。
+  \item \texttt{router/index.ts}：14 条路由，按角色分三级——公开路由（/login）、学生路由（/student/*）、教师工作台路由（/teacher/*）、管理员路由（/admin/*）。教师、助教和管理员可访问教师工作台；助教登录后复用教师端页面。路由守卫在需要时调用 \texttt{/auth/me} 校验后端登录态和角色，学生访问教师工作台会自动重定向到学生仪表盘，管理员路由仅 ADMIN 可访问。未登录或 token 失效访问受保护路由都会重定向 /login。
 \end{itemize}
 
 \subsubsection*{组件（8 个）}
@@ -457,11 +458,11 @@ Spring Security 无状态配置（\texttt{SecurityConfig}）：禁用 Session、
 \texttt{/student/exams}                      & StudentExams       & 学生 \\
 \texttt{/student/exams/:id/take}             & ExamTake           & 学生 \\
 \texttt{/student/classes}                    & StudentClasses     & 学生 \\
-\texttt{/teacher/dashboard}                  & TeacherDashboard   & 教师 \\
-\texttt{/teacher/questions}                  & TeacherQuestions   & 教师 \\
-\texttt{/teacher/classes}                    & TeacherClasses     & 教师 \\
-\texttt{/teacher/exams/new}                  & ExamWizard         & 教师 \\
-\texttt{/teacher/scores}                     & TeacherScores      & 教师 \\
+\texttt{/teacher/dashboard}                  & TeacherDashboard   & 教师/助教 \\
+\texttt{/teacher/questions}                  & TeacherQuestions   & 教师/助教 \\
+\texttt{/teacher/classes}                    & TeacherClasses     & 教师/助教 \\
+\texttt{/teacher/exams/new}                  & ExamWizard         & 教师/助教 \\
+\texttt{/teacher/scores}                     & TeacherScores      & 教师/助教 \\
 \texttt{/admin/users}                        & AdminUsers         & 管理员 \\
 \hline
 \end{tabular}

@@ -67,7 +67,7 @@ public class AdminUserService {
 
     private String normalizeRole(String role) {
         String value = role == null || role.trim().isEmpty() ? "STUDENT" : role.trim().toUpperCase();
-        if (!"STUDENT".equals(value) && !"TEACHER".equals(value) && !"ADMIN".equals(value)) {
+        if (!"STUDENT".equals(value) && !"TEACHER".equals(value) && !"ASSISTANT".equals(value) && !"ADMIN".equals(value)) {
             throw BusinessException.badRequest("用户角色不合法");
         }
         return value;

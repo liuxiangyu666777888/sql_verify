@@ -35,19 +35,19 @@ public class QuestionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<QuestionRecord> create(@RequestBody QuestionRequest request) {
         return ApiResponse.ok(questionService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<QuestionRecord> update(@PathVariable Long id, @RequestBody QuestionRequest request) {
         return ApiResponse.ok(questionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ASSISTANT', 'ADMIN')")
     public ApiResponse<String> delete(@PathVariable Long id) {
         questionService.delete(id);
         return ApiResponse.ok("ok");

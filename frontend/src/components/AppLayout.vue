@@ -149,7 +149,7 @@ import http from '../api/http'
 const auth = useAuthStore()
 const router = useRouter()
 const role = computed(() => auth.user?.role || localStorage.getItem('role') || '')
-const isTeacher = computed(() => ['TEACHER', 'ADMIN'].includes(role.value))
+const isTeacher = computed(() => ['TEACHER', 'ASSISTANT', 'ADMIN'].includes(role.value))
 const isAdmin = computed(() => role.value === 'ADMIN')
 const avatarText = computed(() => (auth.user?.realName || auth.user?.username || 'U').slice(0, 1).toUpperCase())
 const notice = ref('')
